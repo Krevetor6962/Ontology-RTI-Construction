@@ -86,6 +86,7 @@ OntologyAccelerator/
 │   ├── Deploy-DataAgent.ps1               # Fabric Data Agent (requires F64+)
 │   ├── Deploy-OperationsAgent.ps1         # Operations Agent (RTI, Teams integration)
 │   ├── Deploy-GraphQuerySet.ps1           # Graph Query Set item creator
+│   ├── Deploy-KqlTables.ps1               # KQL table creation and data ingestion
 │   ├── LoadDataToTables.py                # PySpark notebook for CSV → Delta tables
 │   ├── RefineryGraphQueries.gql           # GQL query reference file
 │   ├── Validate-Deployment.ps1            # Post-deployment validation
@@ -127,7 +128,7 @@ The script automates all 10 steps (see [SETUP_GUIDE.md - Automated Deployment](S
 |------|------|-------------|
 | OilGasRefineryLH | Lakehouse | 13 Delta tables with refinery data |
 | OilGasRefinery_LoadTables | Notebook | PySpark notebook for CSV → Delta table loading |
-| RefineryTelemetryEH | Eventhouse | Real-time telemetry with 5 KQL tables |
+| RefineryTelemetryEH | Eventhouse | Real-time telemetry with 5 KQL tables (auto-populated) |
 | OilGasRefinerySM | Semantic Model | Direct Lake model (13 tables, 17 relationships) |
 | OilGasRefineryOntology | Ontology | 59-part ontology definition |
 | OilGasRefineryOntology_graph_* | GraphModel | Graph model with full query readiness |

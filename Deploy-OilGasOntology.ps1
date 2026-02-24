@@ -473,155 +473,239 @@ $notebookSourcePath = Join-Path (Join-Path $scriptDir "deploy") "LoadDataToTable
 $notebookCode = Get-Content -Path $notebookSourcePath -Raw
 Write-Info "Notebook source loaded ($($notebookCode.Length) chars)"
 
-# Build the ipynb JSON manually to avoid PS 5.1 ConvertTo-Json crash with large strings
-# IMPORTANT: ipynb format requires source to be an array of strings (one per line)
-$lines = $notebookCode -split "`r?`n"
-$sourceArray = ""
-for ($i = 0; $i -lt $lines.Count; $i++) {
-    $escapedLine = $lines[$i].Replace('\', '\\').Replace('"', '\"').Replace("`t", '\t')
-    if ($i -lt ($lines.Count - 1)) {
-        $sourceArray += '"' + $escapedLine + '\n",'
-    } else {
-        $sourceArray += '"' + $escapedLine + '"'
-    }
-}
-$notebookJson = '{"metadata":{"language_info":{"name":"python"},"kernel_info":{"name":"synapse_pyspark"}},"nbformat":4,"nbformat_minor":5,"cells":[{"cell_type":"code","source":[' + $sourceArray + '],"metadata":{},"outputs":[]}]}'
-$notebookBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($notebookJson))
-Write-Info "Notebook payload encoded (Base64 length: $($notebookBase64.Length))"
+# Build Fabric native notebook format (.py with # META sections)
+# This format preserves lakehouse dependency metadata (ipynb format strips it)
+$notebookNativeContent = @"
+# Synapse Analytics notebook source
 
-# Build the API request body JSON manually (PS 5.1 ConvertTo-Json chokes on large nested payloads)
+# METADATA ********************
+
+# META {
+# META   "kernel_info": {
+# META     "name": "synapse_pyspark"
+# META   },
+# META   "dependencies": {
+# META     "lakehouse": {
+# META       "default_lakehouse": "$lakehouseId",
+# META       "default_lakehouse_name": "$LakehouseName",
+# META       "default_lakehouse_workspace_id": "$WorkspaceId",
+# META       "known_lakehouses": [
+# META         {
+# META           "id": "$lakehouseId"
+# META         }
+# META       ]
+# META     }
+# META   }
+# META }
+
+# CELL ********************
+
+$notebookCode
+
+# METADATA ********************
+
+# META {
+# META   "language": "python",
+# META   "language_group": "synapse_pyspark"
+# META }
+"@
+# Normalize line endings to LF (Fabric native format uses Unix line endings)
+$notebookNativeContent = $notebookNativeContent -replace "`r`n", "`n"
+$notebookBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($notebookNativeContent))
+Write-Info "Notebook content encoded (Base64 length: $($notebookBase64.Length))"
+
+# ---- Step 3A: Create notebook item (without definition) ----
 $nbDescription = "Loads Oil and Gas Refinery CSV files from lakehouse Files into Delta tables"
-$createNbJson = '{"displayName":"OilGasRefinery_LoadTables","type":"Notebook","description":"' + $nbDescription + '","definition":{"format":"ipynb","parts":[{"path":"notebook-content.py","payload":"' + $notebookBase64 + '","payloadType":"InlineBase64"}]}}'
+$createNbBodyJson = @{
+    displayName = "OilGasRefinery_LoadTables"
+    type        = "Notebook"
+    description = $nbDescription
+} | ConvertTo-Json -Depth 5
+$nbHeaders = @{ "Authorization" = "Bearer $fabricToken"; "Content-Type" = "application/json" }
 
-try {
-    Write-Info "Sending notebook creation request..."
-    $nbHeaders = @{
-        "Authorization" = "Bearer $fabricToken"
-        "Content-Type"  = "application/json"
+$notebookId = $null
+for ($createAttempt = 1; $createAttempt -le 3; $createAttempt++) {
+    if ($createAttempt -gt 1) {
+        Write-Info "Notebook creation retry $createAttempt/3 - waiting 15s..."
+        Start-Sleep -Seconds 15
+        $fabricToken = Get-FabricToken
+        $nbHeaders = @{ "Authorization" = "Bearer $fabricToken"; "Content-Type" = "application/json" }
     }
-    $nbResponse = Invoke-WebRequest -Method Post `
-        -Uri "$FabricApiBase/workspaces/$WorkspaceId/items" `
-        -Headers $nbHeaders `
-        -Body $createNbJson `
-        -UseBasicParsing
+    try {
+        Write-Info "Creating notebook item (attempt $createAttempt)..."
+        $nbCreateResp = Invoke-WebRequest -Method Post `
+            -Uri "$FabricApiBase/workspaces/$WorkspaceId/items" `
+            -Headers $nbHeaders -Body $createNbBodyJson -UseBasicParsing
+        Write-Info "  Creation HTTP status: $($nbCreateResp.StatusCode)"
 
-    if ($nbResponse.StatusCode -eq 202) {
-        Write-Info "Notebook creation accepted (202). Waiting for provisioning..."
-        # Poll the operation URL if available, or just wait and lookup by name
-        $opUrl = $null
-        try { $opUrl = $nbResponse.Headers["Location"] } catch {}
-        if (-not $opUrl) {
-            try { 
-                $opId = $nbResponse.Headers["x-ms-operation-id"]
-                if ($opId) { $opUrl = "$FabricApiBase/operations/$opId" }
-            } catch {}
+        if ($nbCreateResp.StatusCode -eq 201) {
+            # Immediate success - parse item from response
+            $nbObj = $nbCreateResp.Content | ConvertFrom-Json
+            $notebookId = $nbObj.id
         }
-        if ($opUrl) {
-            $pollHeaders = @{ "Authorization" = "Bearer $fabricToken" }
-            $maxPoll = 120; $polled = 0
-            while ($polled -lt $maxPoll) {
-                Start-Sleep -Seconds 10
-                $polled += 10
-                try {
-                    $pollResp = Invoke-WebRequest -Method Get -Uri $opUrl -Headers $pollHeaders -UseBasicParsing
-                    $pollData = $pollResp.Content | ConvertFrom-Json
-                    Write-Info "  Operation: $($pollData.status) ($polled`s)"
-                    if ($pollData.status -eq "Succeeded") { break }
-                    if ($pollData.status -eq "Failed") { Write-Warn "Operation failed"; break }
-                } catch {
-                    Write-Warn "Poll error: $($_.Exception.Message)"
-                    break
+        elseif ($nbCreateResp.StatusCode -eq 202) {
+            # Long-running operation - poll
+            $nbOpUrl = $nbCreateResp.Headers["Location"]
+            if ($nbOpUrl) {
+                for ($p = 1; $p -le 12; $p++) {
+                    Start-Sleep -Seconds 5
+                    $nbPoll = Invoke-RestMethod -Uri $nbOpUrl -Headers @{Authorization = "Bearer $fabricToken"}
+                    Write-Info "  Creation LRO: $($nbPoll.status) ($($p*5)s)"
+                    if ($nbPoll.status -eq "Succeeded") { break }
+                    if ($nbPoll.status -eq "Failed") { Write-Warn "Creation LRO failed"; break }
                 }
             }
+            # Look up notebook by name to get its actual item ID
+            Start-Sleep -Seconds 3
+            $nbItems = (Invoke-RestMethod -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=Notebook" `
+                -Headers @{Authorization = "Bearer $fabricToken"}).value
+            $nbFound = $nbItems | Where-Object { $_.displayName -eq "OilGasRefinery_LoadTables" } | Select-Object -First 1
+            if ($nbFound) { $notebookId = $nbFound.id }
         }
-        else {
-            Start-Sleep -Seconds 15
+
+        if ($notebookId) {
+            Write-Success "Notebook item created: $notebookId"
+            break
         }
-        # Look up the notebook by name
-        Write-Info "Looking up notebook ID..."
-        $nbItems = Invoke-FabricApi -Method Get `
-            -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=Notebook" `
-            -Token $fabricToken
-        $notebook = $nbItems.value | Where-Object { $_.displayName -eq "OilGasRefinery_LoadTables" } | Select-Object -First 1
-        $notebookId = $notebook.id
+        Write-Warn "Notebook not found after creation attempt $createAttempt"
     }
-    else {
-        $notebook = $nbResponse.Content | ConvertFrom-Json
-        $notebookId = $notebook.id
-    }
-    Write-Success "Notebook created: $notebookId"
-}
-catch {
-    $nbErrBody = ""
-    if ($_.Exception.Response) {
+    catch {
+        $nbErrBody = ""
         try {
             $sr = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
-            $nbErrBody = $sr.ReadToEnd()
-            $sr.Close()
+            $nbErrBody = $sr.ReadToEnd(); $sr.Close()
         } catch {}
-    }
-    $errMsg = "$($_.Exception.Message) $nbErrBody"
-    if ($errMsg -like "*ItemDisplayNameAlreadyInUse*" -or $errMsg -like "*already in use*") {
-        Write-Warn "Notebook already exists. Looking up..."
-        $items = Invoke-FabricApi -Method Get `
-            -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=Notebook" `
-            -Token $fabricToken
-        $notebook = $items.value | Where-Object { $_.displayName -eq "OilGasRefinery_LoadTables" } | Select-Object -First 1
-        $notebookId = $notebook.id
-        Write-Info "Using existing notebook: $notebookId"
-    }
-    else { throw }
-}
-
-# Run the notebook
-Write-Info "Running notebook to load CSV files into Delta tables..."
-Write-Info "This operation may take several minutes as Spark session starts..."
-
-$runBody = @{
-    executionData = @{
-        parameters = @{
-            lakehouse_id = @{ value = $lakehouseId; type = "string" }
-            workspace_id = @{ value = $WorkspaceId; type = "string" }
+        $errMsg = "$($_.Exception.Message) $nbErrBody"
+        if ($errMsg -like "*ItemDisplayNameAlreadyInUse*" -or $errMsg -like "*already in use*") {
+            Write-Warn "Notebook already exists - looking up..."
+            $nbItems = (Invoke-RestMethod -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=Notebook" `
+                -Headers @{Authorization = "Bearer $fabricToken"}).value
+            $nbFound = $nbItems | Where-Object { $_.displayName -eq "OilGasRefinery_LoadTables" } | Select-Object -First 1
+            if ($nbFound) { $notebookId = $nbFound.id; Write-Info "Using existing notebook: $notebookId" }
+            break
         }
+        Write-Warn "Creation error (attempt $createAttempt): $errMsg"
     }
 }
 
-try {
-    $runResult = Invoke-FabricApi -Method Post `
-        -Uri "$FabricApiBase/workspaces/$WorkspaceId/items/$notebookId/jobs/instances?jobType=RunNotebook" `
-        -Body $runBody `
-        -Token $fabricToken
+# ---- Step 3B: Update definition with lakehouse binding ----
+$definitionApplied = $false
+if ($notebookId) {
+    $updateDefJson = '{"definition":{"parts":[{"path":"notebook-content.py","payload":"' + $notebookBase64 + '","payloadType":"InlineBase64"}]}}'
+    for ($defAttempt = 1; $defAttempt -le 3; $defAttempt++) {
+        if ($defAttempt -gt 1) {
+            Write-Info "Definition update retry $defAttempt/3 - waiting 10s..."
+            Start-Sleep -Seconds 10
+            $fabricToken = Get-FabricToken
+        }
+        $nbHeaders = @{ "Authorization" = "Bearer $fabricToken"; "Content-Type" = "application/json" }
+        try {
+            Write-Info "Updating notebook definition (attempt $defAttempt)..."
+            $udResp = Invoke-WebRequest -Method Post `
+                -Uri "$FabricApiBase/workspaces/$WorkspaceId/items/$notebookId/updateDefinition" `
+                -Headers $nbHeaders -Body $updateDefJson -UseBasicParsing
+            Write-Info "  updateDefinition HTTP status: $($udResp.StatusCode)"
 
-    Write-Success "Notebook execution started"
-
-    # Poll for notebook completion
-    if ($runResult -and $runResult.id) {
-        $jobId = $runResult.id
-        Write-Info "Job ID: $jobId - waiting for completion..."
-        $maxWait = 600
-        $waited = 0
-        while ($waited -lt $maxWait) {
-            Start-Sleep -Seconds 15
-            $waited += 15
-            $jobStatus = Invoke-FabricApi -Method Get `
-                -Uri "$FabricApiBase/workspaces/$WorkspaceId/items/$notebookId/jobs/instances/$jobId" `
-                -Token $fabricToken
-            $state = $jobStatus.status
-            Write-Info "  Notebook job status: $state ($waited`s)"
-            if ($state -eq "Completed") {
-                Write-Success "Notebook execution completed successfully"
-                break
+            if ($udResp.StatusCode -eq 200) {
+                $definitionApplied = $true
             }
-            elseif ($state -eq "Failed" -or $state -eq "Cancelled") {
-                Write-Warn "Notebook job $state. You may need to run it manually."
+            elseif ($udResp.StatusCode -eq 202) {
+                $udOpUrl = $udResp.Headers["Location"]
+                if ($udOpUrl) {
+                    for ($p = 1; $p -le 12; $p++) {
+                        Start-Sleep -Seconds 5
+                        $udPoll = Invoke-RestMethod -Uri $udOpUrl -Headers @{Authorization = "Bearer $fabricToken"}
+                        Write-Info "  Definition LRO: $($udPoll.status) ($($p*5)s)"
+                        if ($udPoll.status -eq "Succeeded") { $definitionApplied = $true; break }
+                        if ($udPoll.status -eq "Failed") {
+                            $failDetail = $udPoll | ConvertTo-Json -Depth 5 -Compress
+                            Write-Warn "Definition LRO failed: $failDetail"
+                            break
+                        }
+                    }
+                }
+            }
+
+            if ($definitionApplied) {
+                Write-Success "Notebook definition updated with lakehouse binding"
                 break
             }
         }
+        catch {
+            Write-Warn "Definition update error (attempt $defAttempt): $($_.Exception.Message)"
+        }
+    }
+    if (-not $definitionApplied) {
+        Write-Warn "Failed to update notebook definition. Please update it manually."
     }
 }
-catch {
-    Write-Warn "Could not run notebook automatically: $_"
-    Write-Warn "Please run the notebook 'OilGasRefinery_LoadTables' manually from the Fabric portal."
+
+# ---- Step 3C: Run the notebook ----
+$notebookSuccess = $false
+if ($notebookId -and $definitionApplied) {
+    Write-Info "Running notebook to load CSV files into Delta tables..."
+    Write-Info "This operation may take several minutes as Spark session starts..."
+    Start-Sleep -Seconds 15
+
+    for ($runAttempt = 1; $runAttempt -le 3; $runAttempt++) {
+        if ($runAttempt -gt 1) {
+            Write-Info "Run retry $runAttempt/3 - waiting 30s..."
+            Start-Sleep -Seconds 30
+            $fabricToken = Get-FabricToken
+        }
+        $nbHeaders = @{ "Authorization" = "Bearer $fabricToken"; "Content-Type" = "application/json" }
+        try {
+            Write-Info "Starting notebook run (attempt $runAttempt)..."
+            $runResp = Invoke-WebRequest -Method Post `
+                -Uri "$FabricApiBase/workspaces/$WorkspaceId/items/$notebookId/jobs/instances?jobType=RunNotebook" `
+                -Headers $nbHeaders -UseBasicParsing
+            Write-Info "  Run HTTP status: $($runResp.StatusCode)"
+
+            if ($runResp.StatusCode -eq 202) {
+                $jobLoc = $runResp.Headers["Location"]
+                if ($jobLoc) {
+                    $maxWait = 600; $waited = 0
+                    while ($waited -lt $maxWait) {
+                        Start-Sleep -Seconds 15; $waited += 15
+                        try {
+                            $jobStat = Invoke-RestMethod -Uri $jobLoc -Headers @{Authorization = "Bearer $fabricToken"}
+                            Write-Info "  Notebook job: $($jobStat.status) ($waited`s)"
+                            if ($jobStat.status -eq "Completed") {
+                                Write-Success "Notebook execution completed successfully"
+                                $notebookSuccess = $true; break
+                            }
+                            if ($jobStat.status -eq "Failed" -or $jobStat.status -eq "Cancelled") {
+                                $reason = ""
+                                if ($jobStat.failureReason) { $reason = $jobStat.failureReason.message }
+                                Write-Warn "Notebook job $($jobStat.status): $reason"
+                                break
+                            }
+                        }
+                        catch {
+                            if ($_.Exception.Response -and [int]$_.Exception.Response.StatusCode -eq 404) {
+                                Write-Info "  Job not ready yet ($waited`s)"
+                            } else { Write-Warn "  Poll error: $($_.Exception.Message)" }
+                        }
+                    }
+                }
+            }
+            if ($notebookSuccess) { break }
+        }
+        catch {
+            Write-Warn "Notebook run error (attempt $runAttempt): $($_.Exception.Message)"
+        }
+    }
+
+    if (-not $notebookSuccess) {
+        Write-Warn "Notebook did not complete successfully."
+        Write-Warn "Please run 'OilGasRefinery_LoadTables' manually from the Fabric portal."
+    }
+}
+elseif ($notebookId -and -not $definitionApplied) {
+    Write-Warn "Skipping notebook run - definition was not applied. Update and run manually."
+}
+else {
+    Write-Warn "Failed to create notebook. Please create and run it manually."
 }
 
 # ------------------------------------------------------------------
@@ -656,9 +740,34 @@ catch {
     else { throw }
 }
 
-Write-Info "Eventhouse is being provisioned. Telemetry data (SensorTelemetry.csv)"
-Write-Info "must be uploaded manually via: Eventhouse > KQL Database > Get data > Local file"
-Write-Info "See SETUP_GUIDE.md Step 5 for detailed instructions."
+Write-Info "Eventhouse provisioned. KQL tables and data will be loaded in Step 4b."
+
+# ------------------------------------------------------------------
+# Step 4b: Create KQL Tables and Ingest Data
+# ------------------------------------------------------------------
+Write-Step "Step 4b: Creating KQL tables and ingesting telemetry data"
+
+$kqlTablesScript = Join-Path $scriptDir "deploy\Deploy-KqlTables.ps1"
+if (Test-Path $kqlTablesScript) {
+    try {
+        $kqlParams = @{
+            WorkspaceId  = $WorkspaceId
+            EventhouseId = $eventhouseId
+            DataFolder   = $DataFolder
+        }
+        & $kqlTablesScript @kqlParams
+        Write-Success "KQL tables created and data ingested."
+    }
+    catch {
+        Write-Warn "KQL table deployment encountered an issue: $_"
+        Write-Info "You can re-run: deploy\Deploy-KqlTables.ps1 -WorkspaceId $WorkspaceId -EventhouseId $eventhouseId -DataFolder `"$DataFolder`""
+        Write-Info "Or upload SensorTelemetry.csv manually via Eventhouse > KQL Database > Get data > Local file"
+    }
+}
+else {
+    Write-Warn "KQL tables script not found at: $kqlTablesScript"
+    Write-Info "Upload SensorTelemetry.csv manually via: Eventhouse > KQL Database > Get data > Local file"
+}
 
 # ------------------------------------------------------------------
 # Step 5: Create Semantic Model (TMDL format)
@@ -980,7 +1089,7 @@ Write-Host ""
 Write-Host "  REMAINING MANUAL STEPS:" -ForegroundColor Yellow
 Write-Host "  -------------------------------------------------" -ForegroundColor Yellow
 Write-Host "  1. If notebook did not run: Execute 'OilGasRefinery_LoadTables' notebook" -ForegroundColor Yellow
-Write-Host "  2. Upload SensorTelemetry.csv to Eventhouse KQL database" -ForegroundColor Yellow
+Write-Host "  2. If KQL tables were not created: Upload SensorTelemetry.csv to Eventhouse manually" -ForegroundColor Yellow
 Write-Host "  3. If semantic model was created manually: define relationships" -ForegroundColor Yellow
 Write-Host "     (see SEMANTIC_MODEL_GUIDE.md)" -ForegroundColor Yellow
 Write-Host "  4. Open ontology and configure entity types + relationships" -ForegroundColor Yellow

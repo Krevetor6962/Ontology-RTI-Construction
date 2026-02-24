@@ -322,6 +322,7 @@ cd OntologyAccelerator
 | 2 | Uploads all 13 CSV files to Lakehouse Files/ | OneLake DFS API |
 | 3 | Creates & runs a Spark notebook to load CSVs into Delta tables | Fabric REST API |
 | 4 | Creates the Eventhouse and KQL database for telemetry | Fabric REST API |
+| 4b | Creates 5 KQL tables and ingests SensorTelemetry.csv + sample data | Kusto REST API |
 | 5 | Creates the Semantic Model (Direct Lake, TMDL, 13 tables, 17 relationships) | Fabric REST API |
 | 6 | Creates the Ontology (59 definition parts) and builds the Graph Model | Fabric REST API |
 | 7 | Deploys the RTI Dashboard (KQL Dashboard with 12 visualization tiles) | Fabric REST API |
@@ -334,7 +335,7 @@ cd OntologyAccelerator
 The script will display a summary of what was created. Some remaining manual steps:
 
 1. **If notebook didn't complete**: Open `OilGasRefinery_LoadTables` notebook in Fabric and run it manually.
-2. **Telemetry data**: Upload `data/SensorTelemetry.csv` to the Eventhouse KQL database via **Get data > Local file**.
+2. **KQL data**: If KQL tables step failed, re-run `deploy\Deploy-KqlTables.ps1` or upload `data/SensorTelemetry.csv` to the Eventhouse KQL database via **Get data > Local file**.
 3. **RTI Dashboard**: Requires the **Create Real-Time dashboards** tenant setting. The dashboard auto-connects to the Eventhouse KQL database.
 4. **Data Agent**: Uses the **Ontology** as its sole data source. Requires Fabric capacity **F64+** (not supported on Trial). The script will skip this step on Trial capacity.
 5. **Graph Query Set**: Open the GQS in Fabric, select the graph model, and copy queries from `deploy/RefineryGraphQueries.gql`.
@@ -359,6 +360,7 @@ This will check for the existence of the lakehouse, eventhouse, semantic model, 
 | `deploy/Build-GraphModel-v2.ps1` | Graph model builder |
 | `deploy/Deploy-RTIDashboard.ps1` | KQL Real-Time Dashboard (12 tiles, 5 KQL tables) |
 | `deploy/Deploy-DataAgent.ps1` | Fabric Data Agent for NL queries |
+| `deploy/Deploy-KqlTables.ps1` | KQL table creation and data ingestion (5 tables) |
 | `deploy/Deploy-GraphQuerySet.ps1` | Graph Query Set item creator (queries added manually) |
 | `deploy/Deploy-OperationsAgent.ps1` | Operations Agent for RTI monitoring and Teams integration |
 | `deploy/LoadDataToTables.py` | PySpark notebook code (CSV → Delta tables) |
