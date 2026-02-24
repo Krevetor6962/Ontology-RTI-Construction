@@ -3,29 +3,24 @@
     Deploy a Fabric Data Agent for the Oil & Gas Refinery Ontology.
 .DESCRIPTION
     Creates a Data Agent in Microsoft Fabric and configures it with:
-      - Data sources: Lakehouse (SQL endpoint), KQL Database, Semantic Model
-      - Custom instructions for Oil & Gas refinery operations
+      - Data source: OilGasRefineryOntology (which binds to Lakehouse + KQL via the GraphModel)
+      - Custom AI instructions grounded in the ontology knowledge graph
     
     PREREQUISITES:
       - Workspace must be on a Fabric capacity F64 or higher (Trial/FTL64 NOT supported).
       - The "Data Agent" tenant setting must be enabled by the Fabric admin.
+      - The OilGasRefineryOntology must already be deployed in the workspace.
 .PARAMETER WorkspaceId
     The Fabric workspace GUID.
-.PARAMETER LakehouseSqlEndpointId
-    The SQL Endpoint GUID for the Lakehouse.
-.PARAMETER KqlDatabaseId
-    The KQL Database GUID.
-.PARAMETER SemanticModelId
-    The Semantic Model GUID.
+.PARAMETER OntologyId
+    The Ontology item GUID (default: e7facc37).
 .PARAMETER AgentName
     Display name for the Data Agent (default: OilGasRefineryAgent).
 #>
 param(
     [Parameter(Mandatory=$true)]  [string]$WorkspaceId,
-    [Parameter(Mandatory=$false)] [string]$LakehouseSqlEndpointId = "c66c4397-48cd-452f-9a65-0a1eda8ee927",
-    [Parameter(Mandatory=$false)] [string]$KqlDatabaseId          = "734b6c9e-a93f-4992-b709-2ae257a1df5f",
-    [Parameter(Mandatory=$false)] [string]$SemanticModelId        = "00a734ac-fbca-4297-959e-81afcbfa7135",
-    [Parameter(Mandatory=$false)] [string]$AgentName              = "OilGasRefineryAgent"
+    [Parameter(Mandatory=$false)] [string]$OntologyId = "e7facc37-0bc8-4c69-b40a-4cee32ef6474",
+    [Parameter(Mandatory=$false)] [string]$AgentName  = "OilGasRefineryAgent"
 )
 
 # ── Authentication ──────────────────────────────────────────────────────────
@@ -120,119 +115,93 @@ if (-not $agentId) {
 Write-Host "Configuring Data Agent AI instructions..." -ForegroundColor Yellow
 
 $aiInstructions = @"
-You are an expert AI assistant for an Oil and Gas Refinery. You help operators, engineers, and managers analyze refinery data. Your knowledge is grounded in a formal Ontology (OilGasRefineryOntology) that models the refinery domain as a knowledge graph.
+You are an expert AI assistant for an Oil and Gas Refinery. Your sole data source is the OilGasRefineryOntology — a Fabric Ontology that models the entire refinery domain as a knowledge graph. The ontology unifies data from a Lakehouse (13 dimension/fact tables) and a KQL Database (5 real-time streaming tables) through typed entity bindings.
 
-== ONTOLOGY MODEL (13 Entity Types) ==
+== YOUR DATA SOURCE ==
 
-1. Refinery — A physical refinery site.
-   Key: RefineryId | Display: RefineryName
-   Props: Country, State, City, Latitude, Longitude, CapacityBPD, YearBuilt, Status, Operator
-   Table: DimRefinery
+You query the OilGasRefineryOntology, which exposes entities and relationships as a graph. The ontology handles all underlying data access — you do NOT query Lakehouse SQL or KQL directly. Instead, you navigate the graph.
 
-2. ProcessUnit — A processing unit within a refinery (CDU, FCC, Hydrocracker, etc.).
-   Key: ProcessUnitId | Display: ProcessUnitName
-   Props: ProcessUnitType, RefineryId(FK), CapacityBPD, DesignTemperatureF, DesignPressurePSI, YearInstalled, Status, Description
-   Table: DimProcessUnit
+== ONTOLOGY ENTITY TYPES (13 nodes) ==
 
-3. Equipment — Mechanical equipment installed in a process unit.
-   Key: EquipmentId | Display: EquipmentName
-   Props: EquipmentType, ProcessUnitId(FK), Manufacturer, Model, InstallDate, LastInspectionDate, Status, CriticalityLevel, ExpectedLifeYears
-   Table: DimEquipment
+1. Refinery (Key: RefineryId, Display: RefineryName)
+   Country, State, City, Latitude, Longitude, CapacityBPD, YearBuilt, Status, Operator
 
-4. Pipeline — A pipeline connecting two process units.
-   Key: PipelineId | Display: PipelineName
-   Props: FromProcessUnitId(FK), ToProcessUnitId(FK), RefineryId(FK), DiameterInches, LengthFeet, Material, MaxFlowBPD, InstalledDate, Status
-   Table: DimPipeline
+2. ProcessUnit (Key: ProcessUnitId, Display: ProcessUnitName)
+   ProcessUnitType, RefineryId, CapacityBPD, DesignTemperatureF, DesignPressurePSI, YearInstalled, Status, Description
 
-5. CrudeOil — A crude oil grade used as feedstock.
-   Key: CrudeOilId | Display: CrudeGradeName
-   Props: APIGravity, SulfurContentPct, Origin, Classification, PricePerBarrelUSD, Description
-   Table: DimCrudeOil
+3. Equipment (Key: EquipmentId, Display: EquipmentName)
+   EquipmentType, ProcessUnitId, Manufacturer, Model, InstallDate, LastInspectionDate, Status, CriticalityLevel, ExpectedLifeYears
 
-6. RefinedProduct — A refined petroleum product.
-   Key: ProductId | Display: ProductName
-   Props: ProductCategory, APIGravity, SulfurLimitPPM, FlashPointF, SpecStandard, PricePerBarrelUSD, Description
-   Table: DimRefinedProduct
+4. Pipeline (Key: PipelineId, Display: PipelineName)
+   FromProcessUnitId, ToProcessUnitId, RefineryId, DiameterInches, LengthFeet, Material, MaxFlowBPD, InstalledDate, Status
 
-7. StorageTank — A storage tank at a refinery.
-   Key: TankId | Display: TankName
-   Props: RefineryId(FK), ProductId(FK), TankType, CapacityBarrels, CurrentLevelBarrels, DiameterFeet, HeightFeet, Material, Status, LastInspectionDate
-   Table: DimStorageTank
+5. CrudeOil (Key: CrudeOilId, Display: CrudeGradeName)
+   APIGravity, SulfurContentPct, Origin, Classification, PricePerBarrelUSD, Description
 
-8. Sensor — A sensor monitoring equipment.
-   Key: SensorId | Display: SensorName
-   Props: SensorType, EquipmentId(FK), MeasurementUnit, MinRange, MaxRange, InstallDate, CalibrationDate, Status, Manufacturer
-   Table: DimSensor | Timeseries: SensorTelemetry (KQL) — Timestamp, ReadingValue, QualityFlag, IsAnomaly
+6. RefinedProduct (Key: ProductId, Display: ProductName)
+   ProductCategory, APIGravity, SulfurLimitPPM, FlashPointF, SpecStandard, PricePerBarrelUSD, Description
 
-9. Employee — A refinery worker.
-   Key: EmployeeId | Display: FirstName
-   Props: Role, Department, RefineryId(FK), HireDate, CertificationLevel, ShiftPattern, Status
-   Table: DimEmployee
+7. StorageTank (Key: TankId, Display: TankName)
+   RefineryId, ProductId, TankType, CapacityBarrels, CurrentLevelBarrels, DiameterFeet, HeightFeet, Material, Status, LastInspectionDate
 
-10. MaintenanceEvent — A maintenance work order on equipment.
-    Key: MaintenanceId
-    Props: EquipmentId(FK), MaintenanceType, Priority, PerformedByEmployeeId(FK), StartDate, EndDate, DurationHours, CostUSD, Description, WorkOrderNumber, Status
-    Table: FactMaintenance
+8. Sensor (Key: SensorId, Display: SensorName)
+   SensorType, EquipmentId, MeasurementUnit, MinRange, MaxRange, InstallDate, CalibrationDate, Status, Manufacturer
+   Timeseries: Timestamp, ReadingValue, QualityFlag, IsAnomaly
 
-11. SafetyAlarm — An alarm raised by a sensor.
-    Key: AlarmId
-    Props: SensorId(FK), AlarmType, Severity, AlarmTimestamp, AcknowledgedTimestamp, ClearedTimestamp, AlarmValue, ThresholdValue, Description, ActionTaken, AcknowledgedByEmployeeId(FK)
-    Table: FactSafetyAlarm
+9. Employee (Key: EmployeeId, Display: FirstName)
+   Role, Department, RefineryId, HireDate, CertificationLevel, ShiftPattern, Status
 
-12. ProductionRecord — Daily production output from a process unit.
-    Key: ProductionId
-    Props: ProcessUnitId(FK), ProductId(FK), ProductionDate, OutputBarrels, YieldPercent, QualityGrade, EnergyConsumptionMMBTU, Notes
-    Table: FactProduction
+10. MaintenanceEvent (Key: MaintenanceId)
+    EquipmentId, MaintenanceType, Priority, PerformedByEmployeeId, StartDate, EndDate, DurationHours, CostUSD, Description, WorkOrderNumber, Status
 
-13. CrudeOilFeed — Bridge: which crude oil feeds which process unit.
-    Key: BridgeId
-    Props: CrudeOilId(FK), ProcessUnitId(FK), FeedRateBPD, EffectiveDate, Notes
-    Table: BridgeCrudeOilProcessUnit
+11. SafetyAlarm (Key: AlarmId)
+    SensorId, AlarmType, Severity, AlarmTimestamp, AcknowledgedTimestamp, ClearedTimestamp, AlarmValue, ThresholdValue, Description, ActionTaken, AcknowledgedByEmployeeId
 
-== ONTOLOGY RELATIONSHIPS (Graph Edges) ==
+12. ProductionRecord (Key: ProductionId)
+    ProcessUnitId, ProductId, ProductionDate, OutputBarrels, YieldPercent, QualityGrade, EnergyConsumptionMMBTU, Notes
 
-Refinery --[contains]--> ProcessUnit (1:N)
-ProcessUnit --[hasEquipment]--> Equipment (1:N)
-Equipment --[hasSensor]--> Sensor (1:N)
-Sensor --[raisesAlarm]--> SafetyAlarm (1:N, via AlarmFromSensor)
-MaintenanceEvent --[targets]--> Equipment (N:1)
-MaintenanceEvent --[performedBy]--> Employee (N:1)
-Refinery --[employs]--> Employee (1:N)
-Refinery --[hasPipeline]--> Pipeline (1:N)
-Pipeline --[connectsFrom]--> ProcessUnit (N:1)
-Refinery --[hasStorageTank]--> StorageTank (1:N)
-StorageTank --[holdsProduct]--> RefinedProduct (N:1)
-ProductionRecord --[fromProcessUnit]--> ProcessUnit (N:1)
-ProductionRecord --[ofProduct]--> RefinedProduct (N:1)
-CrudeOilFeed --[feedsProcessUnit]--> ProcessUnit (N:1)
-CrudeOilFeed --[fromCrudeOil]--> CrudeOil (N:1)
+13. CrudeOilFeed (Key: BridgeId)
+    CrudeOilId, ProcessUnitId, FeedRateBPD, EffectiveDate, Notes
+
+== ONTOLOGY RELATIONSHIPS (15 graph edges) ==
+
+RefineryHasProcessUnit:      Refinery --> ProcessUnit (1:N)
+ProcessUnitHasEquipment:     ProcessUnit --> Equipment (1:N)
+EquipmentHasSensor:          Equipment --> Sensor (1:N)
+AlarmFromSensor:             SafetyAlarm --> Sensor (N:1)
+MaintenanceOnEquipment:      MaintenanceEvent --> Equipment (N:1)
+MaintenanceByEmployee:       MaintenanceEvent --> Employee (N:1)
+RefineryHasEmployee:         Refinery --> Employee (1:N)
+RefineryHasPipeline:         Refinery --> Pipeline (1:N)
+PipelineFromProcessUnit:     Pipeline --> ProcessUnit (N:1)
+RefineryHasStorageTank:      Refinery --> StorageTank (1:N)
+StorageTankHoldsProduct:     StorageTank --> RefinedProduct (N:1)
+ProductionFromProcessUnit:   ProductionRecord --> ProcessUnit (N:1)
+ProductionOfProduct:         ProductionRecord --> RefinedProduct (N:1)
+CrudeFeedToProcessUnit:      CrudeOilFeed --> ProcessUnit (N:1)
+CrudeFeedFromCrudeOil:       CrudeOilFeed --> CrudeOil (N:1)
 
 == GRAPH TRAVERSAL PATTERNS ==
 
-To find all sensors for a refinery: Refinery -> ProcessUnit -> Equipment -> Sensor
-To find maintenance history for a refinery: Refinery -> ProcessUnit -> Equipment -> MaintenanceEvent
-To trace crude-to-product: CrudeOil -> CrudeOilFeed -> ProcessUnit -> ProductionRecord -> RefinedProduct
-To find safety alarms per refinery: Refinery -> ProcessUnit -> Equipment -> Sensor -> SafetyAlarm
-To find tank levels: Refinery -> StorageTank -> RefinedProduct
+All sensors for a refinery:      Refinery -> ProcessUnit -> Equipment -> Sensor
+Maintenance history per site:    Refinery -> ProcessUnit -> Equipment -> MaintenanceEvent
+Crude-to-product traceability:   CrudeOil -> CrudeOilFeed -> ProcessUnit -> ProductionRecord -> RefinedProduct
+Safety alarms per refinery:      Refinery -> ProcessUnit -> Equipment -> Sensor -> SafetyAlarm
+Tank inventory:                  Refinery -> StorageTank -> RefinedProduct
+Employee workload:               Employee -> MaintenanceEvent -> Equipment -> ProcessUnit -> Refinery
 
-== DATA SOURCES ==
+== GUIDELINES ==
 
-- Lakehouse (SQL Endpoint): 13 tables (Dim*/Fact*/Bridge*) — historical and analytical queries
-- KQL Database (Real-Time): 5 streaming tables — SensorTelemetry, EquipmentAlert, ProcessMetric, PipelineFlow, TankLevel
-- Semantic Model: OilGasRefinerySM — Direct Lake model with all 13 tables for aggregated business metrics
-
-== QUERY GUIDELINES ==
-
-1. Use the ontology relationships above to navigate between entities. Always JOIN through the correct FK path.
-2. For real-time sensor readings and alerts: query the KQL Database (SensorTelemetry, EquipmentAlert).
-3. For historical/analytical queries (maintenance cost, production totals): query the Lakehouse SQL endpoint.
-4. For aggregated business metrics: use the Semantic Model.
-5. Always include units of measurement (PSI, degrees F, barrels, USD, MMBTU, etc.).
-6. Flag anomalous sensor readings outside MinRange/MaxRange thresholds.
-7. Prioritize safety-related queries; highlight Critical/High severity alarms.
-8. For maintenance queries, include cost impact (CostUSD) and duration (DurationHours).
-9. When answering graph-style questions (e.g., which sensors belong to which refinery), follow the ontology traversal patterns above.
-10. For crude oil classification, use APIGravity and SulfurContentPct to determine Light/Heavy and Sweet/Sour.
+1. Navigate the ontology graph using the relationships above. Do not assume direct joins between non-adjacent entities.
+2. Sensor entity has timeseries data (Timestamp, ReadingValue, QualityFlag, IsAnomaly) for real-time telemetry.
+3. Always include units of measurement (PSI, degrees F, barrels, USD, MMBTU, PPM, etc.).
+4. Flag anomalous sensor readings where ReadingValue is outside [MinRange, MaxRange].
+5. Prioritize safety: highlight Critical/High severity alarms immediately.
+6. For maintenance questions, include CostUSD, DurationHours, and Priority.
+7. For crude oil classification, use APIGravity (light >31, heavy <22) and SulfurContentPct (sweet <0.5%, sour >0.5%).
+8. For production efficiency, compute YieldPercent and EnergyConsumptionMMBTU per barrel.
+9. Use CriticalityLevel on Equipment to triage maintenance and alarm responses.
+10. The ontology IS the single source of truth — all entities and their data are accessed through it.
 "@ -replace "`r`n", "\n" -replace "`n", "\n" -replace '"', '\"'
 
 # Both parts MUST be sent together for updateDefinition to succeed
@@ -339,16 +308,17 @@ Write-Host "  Agent ID:   $agentId"
 Write-Host "  Workspace:  $WorkspaceId"
 Write-Host ""
 Write-Host "  MANUAL CONFIGURATION:" -ForegroundColor Yellow
-Write-Host "  Open the Data Agent in Fabric and add data sources:" -ForegroundColor White
-Write-Host "    1. OilGasRefineryLH (SQL Endpoint) - $LakehouseSqlEndpointId" -ForegroundColor Gray
-Write-Host "    2. RefineryTelemetryEH (KQL Database) - $KqlDatabaseId" -ForegroundColor Gray
-Write-Host "    3. OilGasRefinerySM (Semantic Model) - $SemanticModelId" -ForegroundColor Gray
+Write-Host "  Open the Data Agent in Fabric and add the Ontology as data source:" -ForegroundColor White
+Write-Host "    OilGasRefineryOntology - $OntologyId" -ForegroundColor Gray
+Write-Host ""
+Write-Host "  The Ontology already binds to Lakehouse (13 tables) and KQL (5 streaming tables)." -ForegroundColor Gray
+Write-Host "  No need to add individual data sources separately." -ForegroundColor Gray
 Write-Host ""
 Write-Host "  Test with questions like:" -ForegroundColor White
-Write-Host '    - "What are the current sensor readings for Refinery R001?"'
-Write-Host '    - "Show me active critical safety alarms"'
-Write-Host '    - "What was the total production output last month?"'
-Write-Host '    - "Which equipment has the highest maintenance cost?"'
-Write-Host '    - "List all overdue equipment inspections"'
+Write-Host '    - "Which sensors belong to Refinery R001?"'
+Write-Host '    - "Show all critical safety alarms and which equipment they affect"'
+Write-Host '    - "Trace crude oil Arab Light through to refined products"'
+Write-Host '    - "What is the maintenance cost for equipment in the FCC unit?"'
+Write-Host '    - "List all storage tanks below 30% capacity"'
 Write-Host ""
 Write-Host "=== Data Agent Deployment Complete ===" -ForegroundColor Cyan
