@@ -11,6 +11,7 @@
     5. An Ontology item
     6. An RTI Dashboard for real-time telemetry visualization (requires tenant setting)
     7. A Data Agent for natural-language data exploration (requires F64+ capacity)
+    8. An Operations Agent for real-time monitoring and Teams-based recommendations
 
 .PARAMETER WorkspaceId
     The GUID of the Fabric workspace to deploy to.
@@ -950,6 +951,27 @@ else {
 }
 
 # ------------------------------------------------------------------
+# Step 10: Deploy Operations Agent
+# ------------------------------------------------------------------
+Write-Step "Step 10: Deploying Operations Agent (Real-Time Intelligence)"
+
+$opsAgentScript = Join-Path $scriptDir "deploy\Deploy-OperationsAgent.ps1"
+if (Test-Path $opsAgentScript) {
+    try {
+        $opsParams = @{ WorkspaceId = $WorkspaceId }
+        & $opsAgentScript @opsParams
+        Write-Success "Operations Agent deployment script executed."
+    }
+    catch {
+        Write-Warn "Operations Agent deployment encountered an issue: $_"
+        Write-Info "You can re-run: deploy\Deploy-OperationsAgent.ps1 -WorkspaceId $WorkspaceId"
+    }
+}
+else {
+    Write-Warn "Operations Agent script not found at: $opsAgentScript"
+}
+
+# ------------------------------------------------------------------
 # Summary
 # ------------------------------------------------------------------
 Write-Host ""
@@ -977,7 +999,6 @@ Write-Host "  4. Open ontology and configure entity types + relationships" -Fore
 Write-Host "     (see SETUP_GUIDE.md Step 4)" -ForegroundColor Yellow
 Write-Host "  5. RTI Dashboard: Requires 'Create Real-Time dashboards' tenant setting" -ForegroundColor Yellow
 Write-Host "  6. Data Agent: Requires Fabric capacity F64+ (not Trial)" -ForegroundColor Yellow
-Write-Host "  7. Graph Query Set: Open the GQS, select graph model, copy queries from deploy/RefineryGraphQueries.gql" -ForegroundColor Yellow
-Write-Host ""
+Write-Host "  7. Graph Query Set: Open the GQS, select graph model, copy queries from deploy/RefineryGraphQueries.gql" -ForegroundColor YellowWrite-Host "  8. Operations Agent: Open agent in Fabric, add Knowledge Source (KQL DB), configure Actions, then Start" -ForegroundColor YellowWrite-Host ""
 Write-Host "  Fabric Portal: https://app.fabric.microsoft.com/" -ForegroundColor Cyan
 Write-Host ""

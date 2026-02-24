@@ -114,66 +114,53 @@ if (-not $agentId) {
 }
 
 # ── Step 2: Update Data Agent Definition ───────────────────────────────────
-# The definition configures data sources and custom instructions.
-Write-Host "Configuring Data Agent definition..." -ForegroundColor Yellow
+# The definition uses the correct schema discovered from getDefinition:
+#   Files/Config/data_agent.json     - main config (schema reference)
+#   Files/Config/draft/stage_config.json - AI instructions
+Write-Host "Configuring Data Agent AI instructions..." -ForegroundColor Yellow
 
-$agentDefinition = @{
-    instructions = @"
-You are an expert AI assistant for an Oil & Gas Refinery. You help operators, engineers, and managers analyze refinery data including:
+$aiInstructions = @"
+You are an expert AI assistant for an Oil and Gas Refinery. You help operators, engineers, and managers analyze refinery data.
 
-**Data Available:**
-- **Lakehouse (SQL)**: Contains 13 dimension and fact tables covering Wells, Pipelines, Refineries, Storage Tanks, Equipment, Products, Employees, Environmental Monitoring, Safety Incidents, Production data, and Inspections.
-- **KQL Database (Real-Time)**: Contains 5 streaming tables — SensorReading, SensorAlert, EquipmentMaintenance, ProcessUnitStatus, and ProductionMetric — with real-time telemetry from refinery equipment.
-- **Semantic Model**: OilGasRefinerySM — a Direct Lake semantic model with all 13 tables for analytical queries.
+DATA AVAILABLE:
+- Lakehouse (SQL): 13 dimension and fact tables - DimRefinery, DimProcessUnit, DimEquipment, DimPipeline, DimCrudeOil, DimRefinedProduct, DimStorageTank, DimSensor, DimEmployee, FactMaintenance, FactSafetyAlarm, FactProduction, BridgeCrudeOilProcessUnit.
+- KQL Database (Real-Time): 5 streaming tables - SensorTelemetry, EquipmentAlert, ProcessMetric, PipelineFlow, TankLevel.
+- Semantic Model: OilGasRefinerySM - Direct Lake model with all 13 tables.
 
-**Key Entity Relationships:**
-- Wells → Pipelines → Refineries → Storage Tanks
-- Equipment belongs to Refineries; Employees work at Refineries
-- Environmental Monitoring and Safety Incidents are linked to Refineries
-- Inspections reference Equipment
-- Production records link Products to Refineries
+KEY RELATIONSHIPS:
+- Refinery contains ProcessUnits which have Equipment monitored by Sensors
+- CrudeOil feeds into ProcessUnits which produce RefinedProducts stored in StorageTanks
+- Pipelines connect ProcessUnits; Employees perform MaintenanceEvents on Equipment
+- SafetyAlarms are raised by Sensors; MaintenanceEvents target Equipment
 
-**Guidelines:**
-1. For real-time sensor data, equipment alerts, and maintenance queries, use the KQL Database.
-2. For historical production, safety, environmental, and asset queries, use the Lakehouse SQL endpoint.
-3. For aggregated business metrics and cross-domain analysis, use the Semantic Model.
-4. Always provide units of measurement when reporting sensor values.
-5. Flag any anomalous readings (values outside LowerThreshold/UpperThreshold).
-6. Prioritize safety-related queries and highlight critical alerts.
-7. When asked about maintenance, include cost impact and downtime estimates.
-8. Support both natural language and technical KQL/SQL queries.
-"@
-    dataSources = @(
-        @{
-            type        = "sqlEndpoint"
-            displayName = "OilGasRefineryLH (SQL)"
-            itemId      = $LakehouseSqlEndpointId
-            workspaceId = $WorkspaceId
-        },
-        @{
-            type        = "kqlDatabase"
-            displayName = "RefineryTelemetryEH (KQL)"
-            itemId      = $KqlDatabaseId
-            workspaceId = $WorkspaceId
-        },
-        @{
-            type        = "semanticModel"
-            displayName = "OilGasRefinerySM"
-            itemId      = $SemanticModelId
-            workspaceId = $WorkspaceId
-        }
-    )
-}
+GUIDELINES:
+1. For real-time data (sensor readings, alerts): use KQL Database
+2. For historical/analytical queries: use Lakehouse SQL endpoint
+3. For aggregated business metrics: use Semantic Model
+4. Always include units (PSI, degrees F, barrels, USD, etc.)
+5. Flag anomalous readings outside MinRange/MaxRange thresholds
+6. Prioritize safety-related queries and highlight Critical/High severity alarms
+7. For maintenance queries, include cost impact (CostUSD) and duration (DurationHours)
+"@ -replace "`r`n", "\n" -replace "`n", "\n" -replace '"', '\"'
 
-$defJson = $agentDefinition | ConvertTo-Json -Depth 10 -Compress
-$defB64  = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($defJson))
+# Both parts MUST be sent together for updateDefinition to succeed
+$dataAgentJson = '{"$schema":"https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/dataAgent/2.1.0/schema.json"}'
+$dataAgentB64  = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($dataAgentJson))
+
+$stageConfigJson = '{"$schema":"https://developer.microsoft.com/json-schemas/fabric/item/dataAgent/definition/stageConfiguration/1.0.0/schema.json","aiInstructions":"' + $aiInstructions + '"}'
+$stageB64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($stageConfigJson))
 
 $updateBody = @{
     definition = @{
         parts = @(
             @{
-                path        = "dataAgent.json"
-                payload     = $defB64
+                path        = "Files/Config/data_agent.json"
+                payload     = $dataAgentB64
+                payloadType = "InlineBase64"
+            },
+            @{
+                path        = "Files/Config/draft/stage_config.json"
+                payload     = $stageB64
                 payloadType = "InlineBase64"
             }
         )
@@ -186,16 +173,23 @@ try {
         -Method POST -Headers $headers -Body $updateBody -UseBasicParsing
 
     if ($updateResponse.StatusCode -in @(200,202)) {
-        Write-Host "[OK] Data Agent definition updated." -ForegroundColor Green
+        Write-Host "[OK] Data Agent AI instructions configured." -ForegroundColor Green
 
         if ($updateResponse.StatusCode -eq 202) {
             $opUrl2 = $updateResponse.Headers['Location']
-            Write-Host "  Definition update LRO started, polling..." -ForegroundColor Yellow
+            Write-Host "  LRO started, polling..." -ForegroundColor Yellow
             do {
                 Start-Sleep -Seconds 3
                 $poll2 = Invoke-RestMethod -Uri $opUrl2 -Headers $headers
                 Write-Host "  Status: $($poll2.status)"
             } while ($poll2.status -notin @('Succeeded','Failed','Cancelled'))
+
+            if ($poll2.status -eq 'Succeeded') {
+                Write-Host "[OK] Definition update succeeded." -ForegroundColor Green
+            } else {
+                Write-Host "[WARN] Definition LRO status: $($poll2.status)" -ForegroundColor Yellow
+                Write-Host "  AI instructions can be set manually in the Fabric UI." -ForegroundColor Yellow
+            }
         }
     }
 }
@@ -205,11 +199,44 @@ catch {
         $s2 = $sr2.GetResponseStream()
         $rd2 = New-Object System.IO.StreamReader($s2)
         Write-Host "[WARN] Definition update: $([int]$sr2.StatusCode): $($rd2.ReadToEnd())" -ForegroundColor Yellow
-        Write-Host "  The Data Agent was created but may need manual configuration in the UI." -ForegroundColor Yellow
+        Write-Host "  The Data Agent was created. Configure AI instructions in the UI." -ForegroundColor Yellow
     }
     else {
         Write-Host "[WARN] Definition update: $($_.Exception.Message)" -ForegroundColor Yellow
     }
+}
+
+# ── Step 3: Verify ─────────────────────────────────────────────────────────
+Write-Host "Verifying Data Agent definition..." -ForegroundColor Yellow
+try {
+    $verifyResp = Invoke-WebRequest `
+        -Uri "https://api.fabric.microsoft.com/v1/workspaces/$WorkspaceId/dataAgents/$agentId/getDefinition" `
+        -Method POST -Headers $headers -UseBasicParsing
+
+    $verifyParts = $null
+    if ($verifyResp.StatusCode -eq 202) {
+        $vLoc = $verifyResp.Headers['Location']
+        do { Start-Sleep -Seconds 2; $vPoll = Invoke-RestMethod -Uri $vLoc -Headers $headers } while ($vPoll.status -notin @('Succeeded','Failed'))
+        if ($vPoll.status -eq 'Succeeded') {
+            $vResult = Invoke-RestMethod -Uri "$vLoc/result" -Headers $headers
+            $verifyParts = $vResult.definition.parts
+        }
+    } else {
+        $verifyParts = ($verifyResp.Content | ConvertFrom-Json).definition.parts
+    }
+
+    if ($verifyParts) {
+        $verifyDef  = $verifyParts | Where-Object { $_.path -eq 'Files/Config/draft/stage_config.json' }
+        $verifyJson = [System.Text.Encoding]::UTF8.GetString([System.Convert]::FromBase64String($verifyDef.payload)) | ConvertFrom-Json
+
+        if ($verifyJson.aiInstructions -and $verifyJson.aiInstructions.Length -gt 0) {
+            Write-Host "[OK] AI instructions verified ($($verifyJson.aiInstructions.Length) chars)." -ForegroundColor Green
+        } else {
+            Write-Host "[INFO] AI instructions are empty. Configure them in the Fabric UI." -ForegroundColor Yellow
+        }
+    }
+} catch {
+    Write-Host "[INFO] Could not verify definition: $($_.Exception.Message)" -ForegroundColor Yellow
 }
 
 # ── Summary ─────────────────────────────────────────────────────────────────
@@ -219,16 +246,17 @@ Write-Host "  Name:       $AgentName"
 Write-Host "  Agent ID:   $agentId"
 Write-Host "  Workspace:  $WorkspaceId"
 Write-Host ""
-Write-Host "Data Sources configured:" -ForegroundColor White
-Write-Host "  1. OilGasRefineryLH (SQL Endpoint) - 13 tables"
-Write-Host "  2. RefineryTelemetryEH (KQL Database) - 5 streaming tables"
-Write-Host "  3. OilGasRefinerySM (Semantic Model) - Direct Lake"
+Write-Host "  MANUAL CONFIGURATION:" -ForegroundColor Yellow
+Write-Host "  Open the Data Agent in Fabric and add data sources:" -ForegroundColor White
+Write-Host "    1. OilGasRefineryLH (SQL Endpoint) - $LakehouseSqlEndpointId" -ForegroundColor Gray
+Write-Host "    2. RefineryTelemetryEH (KQL Database) - $KqlDatabaseId" -ForegroundColor Gray
+Write-Host "    3. OilGasRefinerySM (Semantic Model) - $SemanticModelId" -ForegroundColor Gray
 Write-Host ""
-Write-Host "Open the Data Agent in Fabric to test with questions like:" -ForegroundColor White
-Write-Host '  - "What are the current sensor readings for Refinery R001?"'
-Write-Host '  - "Show me active critical alerts"'
-Write-Host '  - "What was the total production output last month?"'
-Write-Host '  - "Which equipment has the highest maintenance cost?"'
-Write-Host '  - "Are there any environmental compliance issues?"'
+Write-Host "  Test with questions like:" -ForegroundColor White
+Write-Host '    - "What are the current sensor readings for Refinery R001?"'
+Write-Host '    - "Show me active critical safety alarms"'
+Write-Host '    - "What was the total production output last month?"'
+Write-Host '    - "Which equipment has the highest maintenance cost?"'
+Write-Host '    - "List all overdue equipment inspections"'
 Write-Host ""
 Write-Host "=== Data Agent Deployment Complete ===" -ForegroundColor Cyan

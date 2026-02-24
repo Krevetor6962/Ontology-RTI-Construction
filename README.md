@@ -63,7 +63,7 @@ OntologyAccelerator/
 ├── README.md                              # This file
 ├── SETUP_GUIDE.md                         # Step-by-step Fabric setup instructions
 ├── SEMANTIC_MODEL_GUIDE.md                # Power BI semantic model configuration
-├── Deploy-OilGasOntology.ps1              # Main automated deployment script (Steps 0-9)
+├── Deploy-OilGasOntology.ps1              # Main automated deployment script (Steps 0-10)
 ├── data/
 │   ├── DimRefinery.csv                    # Refinery dimension data
 │   ├── DimProcessUnit.csv                 # Process unit dimension data
@@ -84,6 +84,7 @@ OntologyAccelerator/
 │   ├── Build-GraphModel-v2.ps1            # Graph model builder
 │   ├── Deploy-RTIDashboard.ps1            # KQL Real-Time Dashboard (12 tiles)
 │   ├── Deploy-DataAgent.ps1               # Fabric Data Agent (requires F64+)
+│   ├── Deploy-OperationsAgent.ps1         # Operations Agent (RTI, Teams integration)
 │   ├── Deploy-GraphQuerySet.ps1           # Graph Query Set item creator
 │   ├── LoadDataToTables.py                # PySpark notebook for CSV → Delta tables
 │   ├── RefineryGraphQueries.gql           # GQL query reference file
@@ -133,6 +134,7 @@ The script automates all 10 steps (see [SETUP_GUIDE.md - Automated Deployment](S
 | RefineryTelemetryDashboard | KQL Dashboard | 12 real-time visualization tiles |
 | OilGasRefineryQueries | Graph Query Set | Empty shell (add 10 GQL queries manually via UI) |
 | OilGasRefineryAgent | Data Agent | NL query agent (requires F64+ capacity) |
+| RefineryOperationsAgent | Operations Agent | AI agent monitoring KQL telemetry, sends Teams recommendations |
 
 ---
 
@@ -212,3 +214,26 @@ The reference file includes 10 GQL queries:
 8. **Pipeline Network** — Refinery → Pipeline → ProcessUnit
 9. **End-to-End Crude to Product** — Full supply chain traversal
 10. **Workforce and Maintenance** — Refinery → Employee ← MaintenanceEvent
+
+---
+
+## Operations Agent (Real-Time Intelligence)
+
+The `RefineryOperationsAgent` is a Fabric Operations Agent that continuously monitors KQL Database telemetry and sends actionable recommendations via Microsoft Teams.
+
+**What it monitors:**
+- Equipment sensor anomalies (temperature, pressure, flow, vibration outside thresholds)
+- Critical/High severity safety alarms and unacknowledged alerts
+- Production throughput drops and yield degradation
+- Maintenance costs, recurring equipment failures, overdue inspections
+
+**Prerequisites:**
+- Fabric capacity (Trial may work for creation; F2+ for execution)
+- Tenant admin must enable: *Operations Agent* preview + *Copilot and Azure OpenAI Service*
+- Microsoft Teams with *Fabric Operations Agent* app installed
+
+**Post-deployment setup (Fabric UI):**
+1. Open the agent → Add **Knowledge Source** → Select `RefineryTelemetryEH` Eventhouse / `RefineryTelemetryDB` KQL Database
+2. Configure **Actions** (optional): Power Automate flows for safety alerts, maintenance work orders, production escalations
+3. **Save** to generate the playbook → **Start** the agent
+4. Recipients receive proactive recommendations in Teams chat
