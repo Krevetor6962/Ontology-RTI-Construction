@@ -1,0 +1,9 @@
+RefineryId,RefineryName,Country,State,City,Latitude,Longitude,CapacityBPD,YearBuilt,Status,Operator
+REF001,Gulf Coast Refinery,United States,Texas,Houston,29.7604,-95.3698,550000,1965,Active,PetroCorp Energy
+REF002,Baytown Complex,United States,Texas,Baytown,29.7355,-94.9774,600000,1971,Active,PetroCorp Energy
+REF003,North Sea Refinery,United Kingdom,Scotland,Grangemouth,56.0234,-3.7135,210000,1978,Active,PetroCorp Energy
+REF004,Rotterdam Europoort,Netherlands,South Holland,Rotterdam,51.9496,4.1493,420000,1968,Active,PetroCorp Energy
+REF005,Singapore Jurong,Singapore,Singapore,Jurong Island,1.2655,103.6990,390000,1982,Active,PetroCorp Energy
+REF006,Alberta Oil Sands,Canada,Alberta,Fort McMurray,56.7264,-111.3803,310000,1995,Active,PetroCorp Energy
+REF007,Middle East Hub,United Arab Emirates,Abu Dhabi,Ruwais,24.1100,52.7300,480000,1985,Active,PetroCorp Energy
+REF008,Lagos Coastal,Nigeria,Lagos,Lagos,6.5244,3.3792,180000,2001,UnderMaintenance,PetroCorp Energy

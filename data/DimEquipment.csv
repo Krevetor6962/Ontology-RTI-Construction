@@ -1,0 +1,36 @@
+EquipmentId,EquipmentName,EquipmentType,ProcessUnitId,Manufacturer,Model,InstallDate,LastInspectionDate,Status,CriticalityLevel,ExpectedLifeYears
+EQ001,Main Feed Pump A,CentrifugalPump,PU001,Flowserve,HPX-8000,2010-03-15,2025-09-12,Active,Critical,20
+EQ002,Main Feed Pump B,CentrifugalPump,PU001,Flowserve,HPX-8000,2010-03-15,2025-09-12,Standby,Critical,20
+EQ003,Atmospheric Column,DistillationColumn,PU001,Koch-Glitsch,AT-500,1965-06-01,2025-06-20,Active,Critical,40
+EQ004,Pre-Heat Exchanger Train,HeatExchanger,PU001,Alfa Laval,PHE-3200,2015-11-08,2025-08-15,Active,High,25
+EQ005,Desalter Unit,Desalter,PU001,Cameron,DS-120,2005-04-22,2025-07-10,Active,High,20
+EQ006,Overhead Condenser,AirCooledExchanger,PU001,Hamon,ACE-600,2012-09-01,2025-10-05,Active,Medium,25
+EQ007,Reflux Drum,PressureVessel,PU001,Hanson Tank,RD-200,1988-01-15,2025-05-18,Active,Medium,35
+EQ008,Crude Charge Heater,FiredHeater,PU001,John Zink Hamworthy,FH-900,2000-07-20,2025-11-30,Active,Critical,30
+EQ009,VDU Main Column,DistillationColumn,PU003,Koch-Glitsch,VT-400,1970-03-10,2025-04-22,Active,Critical,45
+EQ010,VDU Vacuum Ejector,SteamEjector,PU003,Graham Corp,VE-300,2008-06-15,2025-08-30,Active,High,20
+EQ011,FCC Reactor,Reactor,PU004,UOP Honeywell,RFCC-200,1975-09-01,2025-07-15,Active,Critical,35
+EQ012,FCC Regenerator,Regenerator,PU004,UOP Honeywell,REG-200,1975-09-01,2025-07-15,Active,Critical,35
+EQ013,FCC Main Fractionator,DistillationColumn,PU004,Koch-Glitsch,MF-350,1975-09-01,2025-06-28,Active,Critical,35
+EQ014,FCC Air Blower,Compressor,PU004,Elliott Group,AB-500,2005-02-10,2025-09-20,Active,High,25
+EQ015,FCC Wet Gas Compressor,Compressor,PU004,Dresser-Rand,WGC-800,2010-08-22,2025-10-14,Active,High,20
+EQ016,Hydrocracker Reactor A,Reactor,PU005,Chevron Lummus,HCR-400A,1985-04-15,2025-05-10,Active,Critical,30
+EQ017,Hydrocracker Reactor B,Reactor,PU005,Chevron Lummus,HCR-400B,1985-04-15,2025-05-10,Active,Critical,30
+EQ018,HC Recycle Compressor,Compressor,PU005,MAN Energy,RC-600,2012-03-01,2025-08-25,Active,Critical,20
+EQ019,HC Product Stripper,DistillationColumn,PU005,Koch-Glitsch,PS-250,1985-04-15,2025-06-15,Active,High,30
+EQ020,Reformer Reactor R1,Reactor,PU006,Axens,CCR-100R1,2000-11-15,2025-07-20,Active,Critical,25
+EQ021,Reformer Reactor R2,Reactor,PU006,Axens,CCR-100R2,2000-11-15,2025-07-20,Active,Critical,25
+EQ022,Reformer Net Gas Compressor,Compressor,PU006,Atlas Copco,NGC-400,2008-05-10,2025-09-18,Active,High,20
+EQ023,Alkylation Reactor,Reactor,PU007,DuPont,ALK-R100,2005-01-20,2025-04-30,Active,Critical,25
+EQ024,HF Acid Settler,Separator,PU007,Koch Modular,HFS-50,2005-01-20,2025-04-30,Active,Critical,25
+EQ025,HDS Reactor,Reactor,PU009,Haldor Topsoe,HDS-R200,1988-06-01,2025-06-05,Active,Critical,30
+EQ026,HDS Stripper Column,DistillationColumn,PU009,Koch-Glitsch,ST-180,1988-06-01,2025-06-05,Active,High,30
+EQ027,Amine Absorber,Column,PU009,Sulzer,AA-150,2002-09-15,2025-07-22,Active,Medium,25
+EQ028,Baytown CDU Pump,CentrifugalPump,PU010,Sulzer,CPU-9000,2015-05-10,2025-11-15,Active,Critical,20
+EQ029,Baytown FCC Reactor,Reactor,PU011,UOP Honeywell,RFCC-250,1980-03-01,2025-08-10,Active,Critical,30
+EQ030,Baytown HC Reactor,Reactor,PU012,Chevron Lummus,HCR-500,1992-07-20,2025-09-05,Active,Critical,25
+EQ031,Rotterdam CDU Column,DistillationColumn,PU015,Koch-Glitsch,AT-600,1968-08-01,2025-05-20,Active,Critical,40
+EQ032,Singapore FCC Reactor,Reactor,PU019,UOP Honeywell,RFCC-180,1988-11-01,2025-10-25,Active,Critical,30
+EQ033,Alberta Coker Drum A,CokerDrum,PU021,CB&I,CD-300A,1998-04-10,2025-06-18,Active,Critical,25
+EQ034,Alberta Coker Drum B,CokerDrum,PU021,CB&I,CD-300B,1998-04-10,2025-06-18,Active,Critical,25
+EQ035,ME Hub CDU Heater,FiredHeater,PU022,John Zink Hamworthy,FH-1200,1985-01-01,2025-08-08,Active,Critical,30

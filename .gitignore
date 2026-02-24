@@ -1,0 +1,14 @@
+# Temp / test artifacts
+*_output.txt
+test_*.ps1
+check_*.ps1
+cleanup*.ps1
+workspace_items.txt
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# Editor
+.vscode/
+*.code-workspace

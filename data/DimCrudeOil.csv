@@ -1,0 +1,11 @@
+CrudeOilId,CrudeGradeName,APIGravity,SulfurContentPct,Origin,Classification,PricePerBarrelUSD,Description
+CR001,West Texas Intermediate,39.6,0.24,United States,LightSweet,72.50,Benchmark US light sweet crude
+CR002,Brent Crude,38.06,0.37,North Sea,LightSweet,75.20,International benchmark crude
+CR003,Dubai Crude,31.0,2.00,United Arab Emirates,MediumSour,70.10,Middle East benchmark
+CR004,Arabian Light,33.0,1.77,Saudi Arabia,MediumSour,71.30,Major Middle East export grade
+CR005,Bonny Light,35.4,0.14,Nigeria,LightSweet,74.80,Premium West African crude
+CR006,Western Canadian Select,20.5,3.50,Canada,HeavySour,55.40,Heavy oil sands crude
+CR007,Maya Crude,22.0,3.30,Mexico,HeavySour,58.20,Heavy sour Mexican crude
+CR008,Urals Blend,31.7,1.35,Russia,MediumSour,65.90,Russian export blend
+CR009,Tapis Crude,44.0,0.04,Malaysia,LightSweet,78.50,Ultra-light sweet Asian crude
+CR010,Basrah Light,30.5,2.90,Iraq,MediumSour,68.40,Iraqi export grade

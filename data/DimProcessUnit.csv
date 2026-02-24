@@ -1,0 +1,25 @@
+ProcessUnitId,ProcessUnitName,ProcessUnitType,RefineryId,CapacityBPD,DesignTemperatureF,DesignPressurePSI,YearInstalled,Status,Description
+PU001,CDU-1,CrudeDistillationUnit,REF001,280000,750,50,1965,Active,Primary crude distillation unit separating crude into fractions
+PU002,CDU-2,CrudeDistillationUnit,REF001,270000,750,50,1980,Active,Secondary crude distillation unit
+PU003,VDU-1,VacuumDistillationUnit,REF001,150000,780,25,1970,Active,Vacuum distillation unit processing atmospheric residue
+PU004,FCC-1,FluidCatalyticCracker,REF001,120000,1000,45,1975,Active,Fluid catalytic cracking unit converting heavy gas oil
+PU005,HCK-1,Hydrocracker,REF001,80000,800,2500,1985,Active,Hydrocracking unit producing jet fuel and diesel
+PU006,REF-1,CatalyticReformer,REF001,60000,950,350,1972,Active,Catalytic reformer for high-octane gasoline production
+PU007,ALK-1,AlkylationUnit,REF001,30000,100,150,1978,Active,Alkylation unit producing high-octane gasoline blendstock
+PU008,ISO-1,IsomerizationUnit,REF001,25000,500,450,1990,Active,Isomerization unit for light naphtha upgrading
+PU009,HDS-1,Hydrodesulfurizer,REF001,100000,700,1200,1988,Active,Hydrodesulfurization unit for sulfur removal
+PU010,CDU-3,CrudeDistillationUnit,REF002,300000,750,50,1971,Active,Primary CDU at Baytown Complex
+PU011,FCC-2,FluidCatalyticCracker,REF002,130000,1000,45,1980,Active,FCC unit at Baytown Complex
+PU012,HCK-2,Hydrocracker,REF002,90000,800,2500,1992,Active,Hydrocracker at Baytown Complex
+PU013,CDU-4,CrudeDistillationUnit,REF003,105000,750,50,1978,Active,Primary CDU at North Sea Refinery
+PU014,VDU-2,VacuumDistillationUnit,REF003,60000,780,25,1982,Active,VDU at North Sea Refinery
+PU015,CDU-5,CrudeDistillationUnit,REF004,210000,750,50,1968,Active,Primary CDU at Rotterdam
+PU016,FCC-3,FluidCatalyticCracker,REF004,100000,1000,45,1976,Active,FCC at Rotterdam
+PU017,HCK-3,Hydrocracker,REF004,75000,800,2500,1990,Active,Hydrocracker at Rotterdam
+PU018,CDU-6,CrudeDistillationUnit,REF005,200000,750,50,1982,Active,Primary CDU at Singapore
+PU019,FCC-4,FluidCatalyticCracker,REF005,95000,1000,45,1988,Active,FCC at Singapore
+PU020,CDU-7,CrudeDistillationUnit,REF006,155000,750,50,1995,Active,CDU at Alberta Oil Sands
+PU021,COK-1,DelayedCoker,REF006,80000,900,60,1998,Active,Delayed coker for heavy oil upgrading
+PU022,CDU-8,CrudeDistillationUnit,REF007,240000,750,50,1985,Active,Primary CDU at Middle East Hub
+PU023,FCC-5,FluidCatalyticCracker,REF007,110000,1000,45,1990,Active,FCC at Middle East Hub
+PU024,HCK-4,Hydrocracker,REF007,85000,800,2500,1995,Active,Hydrocracker at Middle East Hub
