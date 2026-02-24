@@ -412,22 +412,32 @@ catch {
     else { throw }
 }
 
-# Wait for lakehouse provisioning
-Start-Sleep -Seconds 10
-
-# Get the SQL endpoint connection string for Direct Lake semantic model
+# Wait for lakehouse SQL endpoint to become available (required for Direct Lake semantic model)
+# The SQL endpoint is provisioned asynchronously and may take up to 2-3 minutes
 $sqlEndpointConnStr = ""
-try {
-    $fabricToken = Get-FabricToken
-    $lhProps = Invoke-FabricApi -Method Get `
-        -Uri "$FabricApiBase/workspaces/$WorkspaceId/lakehouses/$lakehouseId" `
-        -Token $fabricToken
-    if ($lhProps.properties -and $lhProps.properties.sqlEndpointProperties) {
-        $sqlEndpointConnStr = $lhProps.properties.sqlEndpointProperties.connectionString
-        Write-Info "SQL endpoint: $sqlEndpointConnStr"
+$sqlEndpointMaxWait = 180
+$sqlEndpointWaited = 0
+Write-Info "Waiting for SQL endpoint to provision (may take up to 3 minutes)..."
+while ($sqlEndpointWaited -lt $sqlEndpointMaxWait) {
+    Start-Sleep -Seconds 15
+    $sqlEndpointWaited += 15
+    try {
+        $fabricToken = Get-FabricToken
+        $lhProps = Invoke-FabricApi -Method Get `
+            -Uri "$FabricApiBase/workspaces/$WorkspaceId/lakehouses/$lakehouseId" `
+            -Token $fabricToken
+        if ($lhProps.properties -and $lhProps.properties.sqlEndpointProperties -and $lhProps.properties.sqlEndpointProperties.connectionString) {
+            $sqlEndpointConnStr = $lhProps.properties.sqlEndpointProperties.connectionString
+            Write-Success "SQL endpoint ready: $sqlEndpointConnStr ($sqlEndpointWaited`s)"
+            break
+        }
+        Write-Info "  SQL endpoint not ready yet ($sqlEndpointWaited`s)..."
+    } catch {
+        Write-Info "  Waiting for SQL endpoint ($sqlEndpointWaited`s)..."
     }
-} catch {
-    Write-Warn "Could not retrieve SQL endpoint. Semantic model may need manual configuration."
+}
+if (-not $sqlEndpointConnStr) {
+    Write-Warn "SQL endpoint not available after $sqlEndpointMaxWait`s. Semantic model may need manual configuration."
 }
 
 # ------------------------------------------------------------------
@@ -937,20 +947,69 @@ try {
 
     $ontologyId = $ontology.id
     Write-Success "Ontology item created: $ontologyId"
-    Write-Info "Open the ontology in Fabric portal to configure entity types and relationships."
-    Write-Info "  -> Or generate from the semantic model: Open '$SemanticModelName' > Generate Ontology"
 }
 catch {
-    if ($_.Exception.Message -like "*ItemDisplayNameAlreadyInUse*") {
-        Write-Warn "Ontology '$OntologyName' already exists."
+    if ($_.Exception.Message -like "*ItemDisplayNameAlreadyInUse*" -or $_.Exception.Message -like "*already in use*") {
+        Write-Warn "Ontology '$OntologyName' already exists. Looking up..."
+        $ontItems = Invoke-FabricApi -Method Get `
+            -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=Ontology" `
+            -Token $fabricToken
+        $existingOnt = $ontItems.value | Where-Object { $_.displayName -eq $OntologyName } | Select-Object -First 1
+        if ($existingOnt) { $ontologyId = $existingOnt.id; Write-Info "Using existing ontology: $ontologyId" }
     }
     else {
-        Write-Warn "Ontology creation via API may not be available yet (preview feature)."
-        Write-Warn "To create it manually:"
-        Write-Info "  1. Open '$SemanticModelName' in Fabric"
-        Write-Info "  2. Click 'Generate Ontology' from the ribbon"
-        Write-Info "  3. Follow SETUP_GUIDE.md Step 4 for entity type and relationship configuration"
+        Write-Warn "Ontology creation encountered an issue: $($_.Exception.Message)"
     }
+}
+
+# Populate ontology with entity types, relationships, and data bindings
+if ($ontologyId) {
+    $buildOntologyScript = Join-Path $scriptDir "deploy\Build-Ontology.ps1"
+    if (Test-Path $buildOntologyScript) {
+        Write-Info "Building ontology entities and relationships..."
+        # Retrieve KQL database info for time-series bindings
+        $ontKqlDbId = $null
+        $ontKqlClusterUri = $null
+        try {
+            $fabricToken = Get-FabricToken
+            $ontKqlDbInfo = Invoke-FabricApi -Method Get `
+                -Uri "$FabricApiBase/workspaces/$WorkspaceId/kqlDatabases" `
+                -Token $fabricToken
+            $ontKqlDb = $ontKqlDbInfo.value | Where-Object { $_.displayName -eq $EventhouseName }
+            if ($ontKqlDb) {
+                $ontKqlDbId = $ontKqlDb.id
+                $ontKqlDbDetail = Invoke-FabricApi -Method Get `
+                    -Uri "$FabricApiBase/workspaces/$WorkspaceId/kqlDatabases/$ontKqlDbId" `
+                    -Token $fabricToken
+                $ontKqlClusterUri = $ontKqlDbDetail.properties.queryServiceUri
+            }
+        } catch {
+            Write-Warn "Could not retrieve KQL DB details for ontology: $_"
+        }
+
+        try {
+            $fabricToken = Get-FabricToken
+            & $buildOntologyScript `
+                -WorkspaceId $WorkspaceId `
+                -LakehouseId $lakehouseId `
+                -KqlDatabaseId $ontKqlDbId `
+                -KqlClusterUri $ontKqlClusterUri `
+                -KqlDatabaseName $EventhouseName `
+                -OntologyId $ontologyId `
+                -FabricToken $fabricToken
+            Write-Success "Ontology populated with entity types, relationships, and data bindings."
+        }
+        catch {
+            Write-Warn "Ontology build encountered an issue: $_"
+            Write-Info "You can re-run: deploy\Build-Ontology.ps1 -WorkspaceId $WorkspaceId -LakehouseId $lakehouseId -OntologyId $ontologyId"
+        }
+    }
+    else {
+        Write-Info "Build-Ontology.ps1 not found. Configure entities manually in the Fabric portal."
+    }
+}
+else {
+    Write-Warn "Ontology was not created. Create it manually and run Build-Ontology.ps1"
 }
 
 # ------------------------------------------------------------------
