@@ -1,0 +1,16 @@
+StorageId,StorageName,CapacityTonnes,CurrentLevelTonnes,MaterialId,SiteId
+STOR-001,Aggregate Stockpile A,500,320,MAT-005,SITE-001
+STOR-002,Steel Rebar Store,200,145,MAT-010,SITE-001
+STOR-003,Timber Yard North,150,88,MAT-003,SITE-002
+STOR-004,Concrete Batch Silo 1,80,52,MAT-001,SITE-001
+STOR-005,Insulation Board Store,60,35,MAT-006,SITE-003
+STOR-006,Cable Reel Container,25,18,MAT-007,SITE-002
+STOR-007,Glass Panel Rack,40,22,MAT-004,SITE-005
+STOR-008,Aggregate Skip Bin B,300,210,MAT-013,SITE-003
+STOR-009,Pipe Storage Yard,45,30,MAT-008,SITE-008
+STOR-010,Fire Cable Drum Store,20,12,MAT-015,SITE-010
+STOR-011,High-Strength Concrete Silo,80,65,MAT-009,SITE-005
+STOR-012,I-Joist Rack,35,20,MAT-011,SITE-006
+STOR-013,Structural Steel Laydown,250,175,MAT-002,SITE-003
+STOR-014,Rockwool Pallet Store,50,42,MAT-014,SITE-008
+STOR-015,Glazing Unit Container,30,15,MAT-012,SITE-010

@@ -1,0 +1,77 @@
+table factinspectionevent
+	lineageTag: 20000009-0001-0001-0001-000000000001
+
+	measure 'Inspection Count' = COUNTROWS(factinspectionevent)
+		displayFolder: Measures
+		lineageTag: 20000009-0001-0001-0001-100000000001
+
+	column InspectionId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InspectionId
+		lineageTag: 20000009-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column InspectionType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InspectionType
+		lineageTag: 20000009-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column AssetId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: AssetId
+		lineageTag: 20000009-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column InspectorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: InspectorId
+		lineageTag: 20000009-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Date
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Date
+		lineageTag: 20000009-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Result
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Result
+		lineageTag: 20000009-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column NextDueDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: NextDueDate
+		lineageTag: 20000009-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	column Notes
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Notes
+		lineageTag: 20000009-0001-0001-0001-200000000008
+
+		annotation SummarizationSetBy = Automatic
+
+	partition factinspectionevent = entity
+		mode: directLake
+		entityName: factinspectionevent
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

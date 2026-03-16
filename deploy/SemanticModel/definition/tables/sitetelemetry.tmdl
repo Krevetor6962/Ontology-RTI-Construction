@@ -1,0 +1,61 @@
+table sitetelemetry
+	lineageTag: 20000012-0001-0001-0001-000000000001
+
+	measure 'Reading Count' = COUNTROWS(sitetelemetry)
+		displayFolder: Measures
+		lineageTag: 20000012-0001-0001-0001-100000000001
+
+	column SensorId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SensorId
+		lineageTag: 20000012-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column Timestamp
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Timestamp
+		lineageTag: 20000012-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column ReadingType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ReadingType
+		lineageTag: 20000012-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Value
+		dataType: double
+		summarizeBy: sum
+		sourceColumn: Value
+		lineageTag: 20000012-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column Unit
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Unit
+		lineageTag: 20000012-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quality
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Quality
+		lineageTag: 20000012-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	partition sitetelemetry = entity
+		mode: directLake
+		entityName: sitetelemetry
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

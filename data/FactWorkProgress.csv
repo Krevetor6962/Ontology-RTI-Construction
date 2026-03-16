@@ -1,0 +1,16 @@
+ProgressId,ZoneId,Date,ProgressPercent,TaskName,CompletedBy
+PROG-001,ZONE-001,2024-04-15,25,Pile driving complete,WKR-001
+PROG-002,ZONE-001,2024-05-30,50,Ground beams poured,WKR-001
+PROG-003,ZONE-001,2024-07-10,85,Raft slab complete,WKR-005
+PROG-004,ZONE-001,2024-07-30,100,Foundation sign-off,WKR-001
+PROG-005,ZONE-002,2024-09-15,20,Steel columns level 1-3,WKR-005
+PROG-006,ZONE-002,2024-11-20,45,Steel columns level 4-8,WKR-005
+PROG-007,ZONE-002,2025-02-10,72,Floor slabs cast to level 8,WKR-003
+PROG-008,ZONE-006,2024-04-01,30,Primary steel frame erected,WKR-006
+PROG-009,ZONE-006,2024-07-15,60,Secondary steelwork and metal deck,WKR-009
+PROG-010,ZONE-006,2024-10-28,88,Frame complete with connections torqued,WKR-006
+PROG-011,ZONE-009,2024-07-20,35,CFA piles installed,WKR-011
+PROG-012,ZONE-009,2024-09-05,70,Pile caps and ground beams,WKR-015
+PROG-013,ZONE-009,2024-11-15,100,Foundation handover to structural frame,WKR-011
+PROG-014,ZONE-010,2025-01-10,30,Core walls slip-formed,WKR-011
+PROG-015,ZONE-010,2025-04-22,65,Structural frame to level 6,WKR-015

@@ -1,0 +1,45 @@
+table bridgematerialworkzone
+	lineageTag: 20000011-0001-0001-0001-000000000001
+
+	measure 'Total Quantity Tonnes' = SUM(bridgematerialworkzone[QuantityTonnes])
+		displayFolder: Measures
+		lineageTag: 20000011-0001-0001-0001-100000000001
+
+	column MaterialId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MaterialId
+		lineageTag: 20000011-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column ZoneId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ZoneId
+		lineageTag: 20000011-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column QuantityTonnes
+		dataType: double
+		summarizeBy: sum
+		sourceColumn: QuantityTonnes
+		lineageTag: 20000011-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column DeliveryDate
+		dataType: string
+		summarizeBy: none
+		sourceColumn: DeliveryDate
+		lineageTag: 20000011-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	partition bridgematerialworkzone = entity
+		mode: directLake
+		entityName: bridgematerialworkzone
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

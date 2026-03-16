@@ -1,0 +1,16 @@
+InspectionId,InspectionType,AssetId,InspectorId,Date,Result,NextDueDate,Notes
+INSP-001,Equipment Inspection,ASSET-001,WKR-002,2025-06-15,Pass,2025-12-15,Crane annual thorough examination - all within limits
+INSP-002,Safety Audit,ASSET-003,WKR-008,2025-06-22,Pass with Conditions,2025-09-22,Scaffold inspection - minor tie spacing correction needed
+INSP-003,Structural Survey,ASSET-004,WKR-011,2025-07-01,Pass,2026-01-01,Concrete mix plant foundations verified structurally sound
+INSP-004,Quality Check,ASSET-002,WKR-006,2025-07-10,Pass,2025-10-10,Excavator bucket teeth and hydraulics within tolerance
+INSP-005,Equipment Inspection,ASSET-006,WKR-002,2025-07-20,Fail,2025-08-03,Generator fuel leak at injector seal - taken offline for repair
+INSP-006,Safety Audit,ASSET-010,WKR-008,2025-08-05,Pass,2025-11-05,Scaffold platform guardrails and access ladders compliant
+INSP-007,Equipment Inspection,ASSET-008,WKR-011,2025-08-18,Pass,2026-02-18,Crane 6-monthly thorough examination passed
+INSP-008,Quality Check,ASSET-005,WKR-006,2025-09-02,Pass with Conditions,2025-12-02,Forklift chain tension slightly out of spec - adjusted on site
+INSP-009,Structural Survey,ASSET-011,WKR-002,2025-09-15,Pass,2026-03-15,Concrete mixer mounting bolts and frame integrity confirmed
+INSP-010,Safety Audit,ASSET-012,WKR-008,2025-09-28,Fail,2025-10-12,Forklift reverse alarm not functioning - immediate repair required
+INSP-011,Equipment Inspection,ASSET-009,WKR-011,2025-10-10,Pass with Conditions,2026-04-10,Excavator track tension adjustment needed within 30 days
+INSP-012,Quality Check,ASSET-013,WKR-006,2025-10-25,Pass,2026-04-25,Generator load test and fuel system check satisfactory
+INSP-013,Safety Audit,ASSET-014,WKR-002,2025-11-08,Pass,2026-02-08,Compactor ROPS and vibration dampening within standards
+INSP-014,Equipment Inspection,ASSET-015,WKR-008,2025-11-22,Pass,2026-05-22,Crane weekly visual plus 6-monthly thorough exam - clear
+INSP-015,Structural Survey,ASSET-007,WKR-011,2025-12-05,Pass,2026-06-05,Compactor ground engagement and roller integrity verified

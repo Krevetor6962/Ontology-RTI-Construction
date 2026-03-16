@@ -1,0 +1,16 @@
+ZoneId,ZoneName,ZoneType,SiteId,ProgressPercent,StartDate,PlannedEndDate
+ZONE-001,Block A Foundation,Foundation,SITE-001,100,2024-03-15,2024-07-30
+ZONE-002,Block A Structural Frame,Structural Frame,SITE-001,72,2024-08-01,2025-03-31
+ZONE-003,Block A MEP Rough-In,MEP,SITE-001,35,2025-01-15,2025-08-30
+ZONE-004,Block B Foundation,Foundation,SITE-001,100,2024-05-01,2024-09-15
+ZONE-005,Block B External Envelope,External Envelope,SITE-001,58,2025-02-01,2025-10-31
+ZONE-006,North Wing Structural Frame,Structural Frame,SITE-002,88,2024-02-01,2024-11-30
+ZONE-007,North Wing Electrical,Electrical,SITE-002,42,2024-12-01,2025-06-30
+ZONE-008,South Wing Internal Fit-out,Internal Fit-out,SITE-002,20,2025-03-01,2025-09-30
+ZONE-009,Harbour Block Foundation,Foundation,SITE-003,100,2024-06-01,2024-11-15
+ZONE-010,Harbour Block Structural Frame,Structural Frame,SITE-003,65,2024-11-16,2025-07-31
+ZONE-011,Tower A Finishing,Finishing,SITE-005,15,2025-09-01,2026-04-30
+ZONE-012,Tower A Snagging,Snagging,SITE-005,0,2026-05-01,2026-08-31
+ZONE-013,East Wing Foundation,Foundation,SITE-006,45,2024-09-01,2025-02-28
+ZONE-014,East Wing MEP,MEP,SITE-008,30,2025-01-01,2025-09-30
+ZONE-015,West Block External Envelope,External Envelope,SITE-010,55,2025-01-15,2025-11-30

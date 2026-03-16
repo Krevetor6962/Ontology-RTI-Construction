@@ -1,0 +1,16 @@
+IncidentId,IncidentType,Severity,ZoneId,WorkerId,Timestamp,Status,Description
+INC-001,Near Miss,Medium,ZONE-002,WKR-003,2025-06-12T09:15:00,Closed,Loose bolt fell from crane jib during lifting operation
+INC-002,PPE Violation,Low,ZONE-006,WKR-009,2025-07-03T14:30:00,Closed,Worker observed without high-vis vest in active zone
+INC-003,Fall Risk,High,ZONE-005,WKR-005,2025-07-18T11:45:00,Under Review,Scaffolding toe board missing on level 4 platform
+INC-004,Equipment Fault,Medium,ZONE-009,WKR-015,2025-08-02T08:20:00,Closed,Excavator hydraulic line leak detected during pre-start check
+INC-005,Fire,Critical,ZONE-007,WKR-014,2025-08-10T16:05:00,Closed,Electrical short circuit in temporary distribution board
+INC-006,Near Miss,Low,ZONE-010,WKR-011,2025-08-22T10:30:00,Closed,Material delivery vehicle reversed close to pedestrian walkway
+INC-007,PPE Violation,Low,ZONE-003,WKR-004,2025-09-01T13:15:00,Closed,Gloves not worn during cable pulling operation
+INC-008,Fall Risk,High,ZONE-011,WKR-007,2025-09-14T07:50:00,Open,Unprotected leading edge on floor slab level 12
+INC-009,Equipment Fault,Medium,ZONE-013,WKR-012,2025-09-25T15:40:00,Under Review,Excavator slew ring making abnormal noise
+INC-010,Near Miss,Medium,ZONE-001,WKR-001,2025-10-05T09:00:00,Closed,Concrete pump hose coupling failed during pour
+INC-011,Fire,High,ZONE-014,WKR-008,2025-10-18T11:20:00,Closed,Hot works ignited insulation material in riser shaft
+INC-012,PPE Violation,Low,ZONE-008,WKR-006,2025-10-30T14:00:00,Closed,Hard hat not secured with chin strap while working at height
+INC-013,Fall Risk,Critical,ZONE-015,WKR-004,2025-11-08T08:45:00,Open,Inadequate edge protection on external cladding scaffold
+INC-014,Near Miss,Medium,ZONE-004,WKR-009,2025-11-20T16:30:00,Under Review,Compactor rolled on soft ground near excavation edge
+INC-015,Equipment Fault,Low,ZONE-012,WKR-013,2025-12-02T10:10:00,Open,Generator auto-shutoff triggered due to overheating

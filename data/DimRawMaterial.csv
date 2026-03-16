@@ -1,0 +1,16 @@
+MaterialId,MaterialName,MaterialType,Supplier,UnitOfMeasure,UnitCostGBP
+MAT-001,Ready-Mix C30/37,Concrete,Hanson UK,m3,95.00
+MAT-002,Structural Steel S355,Steel,British Steel,tonne,1250.00
+MAT-003,C24 Graded Timber,Timber,BSW Timber,m3,320.00
+MAT-004,Toughened Safety Glass 12mm,Glass,Pilkington UK,m2,85.00
+MAT-005,Type 1 Sub-Base Aggregate,Aggregate,Breedon Group,tonne,28.50
+MAT-006,Kingspan Insulation Board 100mm,Insulation,Kingspan,m2,42.00
+MAT-007,SWA Armoured Cable 4-core,Cabling,Prysmian Group,metre,12.75
+MAT-008,MDPE Blue Water Pipe 63mm,Pipework,Polypipe,metre,8.50
+MAT-009,Ready-Mix C40/50 High Strength,Concrete,CEMEX UK,m3,115.00
+MAT-010,Rebar B500B 16mm,Steel,Celsa Steel UK,tonne,980.00
+MAT-011,Engineered I-Joist 300mm,Timber,James Jones & Sons,metre,18.50
+MAT-012,Double Glazed Unit Argon Filled,Glass,Saint-Gobain,m2,125.00
+MAT-013,Recycled Aggregate 20mm,Aggregate,Day Group,tonne,22.00
+MAT-014,Rockwool Flexi Slab,Insulation,Rockwool,m2,35.50
+MAT-015,Fire-Rated Cable FP200 2-core,Cabling,Nexans,metre,4.80

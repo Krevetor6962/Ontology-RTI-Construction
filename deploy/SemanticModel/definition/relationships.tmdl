@@ -1,88 +1,84 @@
-relationship dimprocessunit_RefineryId_dimrefinery
-	fromColumn: dimprocessunit.RefineryId
-	toColumn: dimrefinery.RefineryId
+relationship dimworkzone_SiteId_dimbuildingsite
+	fromColumn: dimworkzone.SiteId
+	toColumn: dimbuildingsite.SiteId
 	crossFilteringBehavior: oneDirection
 
-relationship dimequipment_ProcessUnitId_dimprocessunit
-	fromColumn: dimequipment.ProcessUnitId
-	toColumn: dimprocessunit.ProcessUnitId
+relationship dimconstructionasset_ZoneId_dimworkzone
+	fromColumn: dimconstructionasset.ZoneId
+	toColumn: dimworkzone.ZoneId
 	crossFilteringBehavior: oneDirection
 
-relationship dimpipeline_FromProcessUnitId_dimprocessunit
-	fromColumn: dimpipeline.FromProcessUnitId
-	toColumn: dimprocessunit.ProcessUnitId
+relationship dimiotsensor_ZoneId_dimworkzone
+	fromColumn: dimiotsensor.ZoneId
+	toColumn: dimworkzone.ZoneId
 	crossFilteringBehavior: oneDirection
 
-relationship dimpipeline_ToProcessUnitId_dimprocessunit
+relationship dimiotsensor_AssetId_dimconstructionasset
 	isActive: false
-	fromColumn: dimpipeline.ToProcessUnitId
-	toColumn: dimprocessunit.ProcessUnitId
+	fromColumn: dimiotsensor.AssetId
+	toColumn: dimconstructionasset.AssetId
 	crossFilteringBehavior: oneDirection
 
-relationship dimpipeline_RefineryId_dimrefinery
+relationship dimmaterialstorage_MaterialId_dimrawmaterial
+	fromColumn: dimmaterialstorage.MaterialId
+	toColumn: dimrawmaterial.MaterialId
+	crossFilteringBehavior: oneDirection
+
+relationship dimmaterialstorage_SiteId_dimbuildingsite
 	isActive: false
-	fromColumn: dimpipeline.RefineryId
-	toColumn: dimrefinery.RefineryId
+	fromColumn: dimmaterialstorage.SiteId
+	toColumn: dimbuildingsite.SiteId
 	crossFilteringBehavior: oneDirection
 
-relationship dimstoragetank_RefineryId_dimrefinery
-	fromColumn: dimstoragetank.RefineryId
-	toColumn: dimrefinery.RefineryId
+relationship factsafetyincident_ZoneId_dimworkzone
+	fromColumn: factsafetyincident.ZoneId
+	toColumn: dimworkzone.ZoneId
 	crossFilteringBehavior: oneDirection
 
-relationship dimstoragetank_ProductId_dimrefinedproduct
-	fromColumn: dimstoragetank.ProductId
-	toColumn: dimrefinedproduct.ProductId
+relationship factsafetyincident_WorkerId_dimworker
+	fromColumn: factsafetyincident.WorkerId
+	toColumn: dimworker.WorkerId
 	crossFilteringBehavior: oneDirection
 
-relationship dimsensor_EquipmentId_dimequipment
-	fromColumn: dimsensor.EquipmentId
-	toColumn: dimequipment.EquipmentId
+relationship factinspectionevent_AssetId_dimconstructionasset
+	fromColumn: factinspectionevent.AssetId
+	toColumn: dimconstructionasset.AssetId
 	crossFilteringBehavior: oneDirection
 
-relationship factmaintenance_EquipmentId_dimequipment
-	fromColumn: factmaintenance.EquipmentId
-	toColumn: dimequipment.EquipmentId
-	crossFilteringBehavior: oneDirection
-
-relationship factmaintenance_PerformedByEmployeeId_dimemployee
-	fromColumn: factmaintenance.PerformedByEmployeeId
-	toColumn: dimemployee.EmployeeId
-	crossFilteringBehavior: oneDirection
-
-relationship factsafetyalarm_SensorId_dimsensor
-	fromColumn: factsafetyalarm.SensorId
-	toColumn: dimsensor.SensorId
-	crossFilteringBehavior: oneDirection
-
-relationship factsafetyalarm_AcknowledgedByEmployeeId_dimemployee
+relationship factinspectionevent_InspectorId_dimworker
 	isActive: false
-	fromColumn: factsafetyalarm.AcknowledgedByEmployeeId
-	toColumn: dimemployee.EmployeeId
+	fromColumn: factinspectionevent.InspectorId
+	toColumn: dimworker.WorkerId
 	crossFilteringBehavior: oneDirection
 
-relationship factproduction_ProcessUnitId_dimprocessunit
-	fromColumn: factproduction.ProcessUnitId
-	toColumn: dimprocessunit.ProcessUnitId
+relationship factworkprogress_ZoneId_dimworkzone
+	fromColumn: factworkprogress.ZoneId
+	toColumn: dimworkzone.ZoneId
 	crossFilteringBehavior: oneDirection
 
-relationship factproduction_ProductId_dimrefinedproduct
-	fromColumn: factproduction.ProductId
-	toColumn: dimrefinedproduct.ProductId
-	crossFilteringBehavior: oneDirection
-
-relationship dimemployee_RefineryId_dimrefinery
+relationship factworkprogress_CompletedBy_dimworker
 	isActive: false
-	fromColumn: dimemployee.RefineryId
-	toColumn: dimrefinery.RefineryId
+	fromColumn: factworkprogress.CompletedBy
+	toColumn: dimworker.WorkerId
 	crossFilteringBehavior: oneDirection
 
-relationship bridgecrudeoilprocessunit_CrudeOilId_dimcrudeoil
-	fromColumn: bridgecrudeoilprocessunit.CrudeOilId
-	toColumn: dimcrudeoil.CrudeOilId
+relationship dimworker_SiteId_dimbuildingsite
+	isActive: false
+	fromColumn: dimworker.SiteId
+	toColumn: dimbuildingsite.SiteId
 	crossFilteringBehavior: oneDirection
 
-relationship bridgecrudeoilprocessunit_ProcessUnitId_dimprocessunit
-	fromColumn: bridgecrudeoilprocessunit.ProcessUnitId
-	toColumn: dimprocessunit.ProcessUnitId
+relationship bridgematerialworkzone_MaterialId_dimrawmaterial
+	fromColumn: bridgematerialworkzone.MaterialId
+	toColumn: dimrawmaterial.MaterialId
+	crossFilteringBehavior: oneDirection
+
+relationship bridgematerialworkzone_ZoneId_dimworkzone
+	fromColumn: bridgematerialworkzone.ZoneId
+	toColumn: dimworkzone.ZoneId
+	crossFilteringBehavior: oneDirection
+
+relationship sitetelemetry_SensorId_dimiotsensor
+	fromColumn: sitetelemetry.SensorId
+	toColumn: dimiotsensor.SensorId
 	crossFilteringBehavior: oneDirection

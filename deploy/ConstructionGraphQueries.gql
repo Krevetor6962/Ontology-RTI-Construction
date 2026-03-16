@@ -1,0 +1,344 @@
+/*
+ * Construction Building Site Ontology - GQL Example Queries
+ * =========================================================
+ * Graph Query Language (GQL) - ISO/IEC 39075:2024
+ * For use with the Fabric Graph Query Set against the ontology Graph Model.
+ *
+ * IMPORTANT: Paste ONE query at a time into the Fabric Graph Query Set editor.
+ *            Do NOT paste this entire file. Each section below is one query.
+ *
+ * Graph Schema:
+ *   Nodes: BuildingSite, WorkZone, ConstructionAsset, SupplyChain,
+ *          RawMaterial, CompletedWork, MaterialStorage, IoTSensor,
+ *          Worker, InspectionEvent, SafetyIncident
+ *
+ *   Edges:
+ *     BuildingSite     -[SiteContainsZone]->      WorkZone
+ *     WorkZone         -[ZoneDeploysAsset]->       ConstructionAsset
+ *     SupplyChain      -[SupplyToZone]->           WorkZone
+ *     SupplyChain      -[SupplyFromMaterial]->     RawMaterial
+ *     MaterialStorage  -[StorageAtSite]->          BuildingSite
+ *     MaterialStorage  -[StorageHoldsMaterial]->   RawMaterial
+ *     IoTSensor        -[SensorMonitorsAsset]->    ConstructionAsset
+ *     SafetyIncident   -[IncidentInZone]->         WorkZone
+ *     InspectionEvent  -[InspectionTargetsAsset]-> ConstructionAsset
+ *     InspectionEvent  -[InspectionByWorker]->     Worker
+ *     Worker           -[WorkerAssignedToSite]->   BuildingSite
+ *     WorkZone         -[ZoneDeliversWork]->       CompletedWork
+ */
+
+
+/* ===== Query 1: Full Site Topology =====
+   Explore the entire construction site graph — all nodes and edges.
+   Use this to visualise the full ontology structure in the Fabric Graph Query Set. */
+
+MATCH (n)-[e]->(m)
+RETURN n, e, m
+LIMIT 200
+
+
+/* ===== Query 2: Building Site Work Zones and Assets =====
+   List every work zone on each building site and the construction assets
+   deployed in that zone (cranes, excavators, scaffolding, etc.). */
+
+MATCH (bs:BuildingSite)-[:SiteContainsZone]->(wz:WorkZone)-[:ZoneDeploysAsset]->(a:ConstructionAsset)
+RETURN bs.ProjectName AS Site,
+       wz.ZoneName AS WorkZone,
+       wz.ZoneType AS ZoneType,
+       a.AssetName AS Asset,
+       a.AssetType AS AssetType
+LIMIT 100
+
+
+/* ===== Query 3: Asset Sensors and Safety Incidents =====
+   Find construction assets monitored by IoT sensors in zones where
+   safety incidents have occurred — correlates sensor coverage with incidents. */
+
+MATCH (a:ConstructionAsset)<-[:SensorMonitorsAsset]-(s:IoTSensor)
+MATCH (si:SafetyIncident)-[:IncidentInZone]->(wz:WorkZone)-[:ZoneDeploysAsset]->(a)
+RETURN a.AssetName AS Asset,
+       s.SensorName AS Sensor,
+       s.SensorType AS SensorType,
+       si.IncidentType AS IncidentType,
+       si.Severity AS Severity,
+       si.Timestamp AS `Timestamp`
+LIMIT 100
+
+
+/* ===== Query 4: Inspection Events by Worker and Asset =====
+   Show which workers performed inspections on which construction assets,
+   including inspection type, date, and result (Pass / Fail / Observation). */
+
+MATCH (w:Worker)<-[:InspectionByWorker]-(ie:InspectionEvent)-[:InspectionTargetsAsset]->(a:ConstructionAsset)
+RETURN w.FirstName AS Inspector,
+       w.Trade AS Trade,
+       ie.InspectionType AS InspectionType,
+       ie.Date AS `Date`,
+       ie.Result AS Result,
+       a.AssetName AS Asset
+ORDER BY ie.Date DESC
+LIMIT 50
+
+
+/* ===== Query 5: Raw Material Supply Chain =====
+   Trace raw materials through the supply chain into work zones —
+   shows which materials are being delivered to which zones and in what quantity. */
+
+MATCH (rm:RawMaterial)<-[:SupplyFromMaterial]-(sc:SupplyChain)-[:SupplyToZone]->(wz:WorkZone)
+RETURN rm.MaterialName AS Material,
+       rm.MaterialType AS MaterialType,
+       rm.Supplier AS Supplier,
+       rm.UnitOfMeasure AS UOM,
+       wz.ZoneName AS WorkZone,
+       wz.ZoneType AS ZoneType,
+       sc.Quantity AS Quantity
+LIMIT 50
+
+
+/* ===== Query 6: Completed Work by Zone =====
+   List completed work deliverables per zone — slabs poured,
+   walls erected, roofs installed — with quality grade and inspector. */
+
+MATCH (wz:WorkZone)-[:ZoneDeliversWork]->(cw:CompletedWork)
+RETURN wz.ZoneName AS WorkZone,
+       wz.ZoneType AS ZoneType,
+       cw.WorkName AS CompletedWork,
+       cw.CompletionDate AS `Date`,
+       cw.QualityGrade AS QualityGrade,
+       cw.InspectedBy AS InspectedBy
+ORDER BY cw.CompletionDate DESC
+LIMIT 50
+
+
+/* ===== Query 7: Material Storage and Inventory =====
+   Show on-site storage depots, the raw materials they hold,
+   and current stock levels relative to capacity. */
+
+MATCH (bs:BuildingSite)<-[:StorageAtSite]-(ms:MaterialStorage)-[:StorageHoldsMaterial]->(rm:RawMaterial)
+RETURN bs.ProjectName AS Site,
+       ms.StorageName AS Storage,
+       ms.Capacity AS Capacity,
+       ms.CurrentLevel AS CurrentLevel,
+       rm.MaterialName AS Material,
+       rm.UnitOfMeasure AS UOM
+LIMIT 50
+
+
+/* ===== Query 8: Supply Chain Network =====
+   Map the supply chain network — which materials flow from suppliers
+   into which work zones, revealing logistics dependencies. */
+
+MATCH (rm:RawMaterial)<-[:SupplyFromMaterial]-(sc:SupplyChain)-[:SupplyToZone]->(wz:WorkZone)
+RETURN rm.MaterialName AS Material,
+       rm.Supplier AS Supplier,
+       sc.SupplyId AS SupplyChain,
+       sc.Quantity AS Quantity,
+       sc.DeliveryDate AS DeliveryDate,
+       wz.ZoneName AS DestinationZone
+LIMIT 50
+
+
+/* ===== Query 9: End-to-End Material to Completed Work =====
+   Full value chain traversal: raw material supplier → supply chain →
+   work zone → completed deliverable. Shows material-to-output traceability. */
+
+MATCH (rm:RawMaterial)<-[:SupplyFromMaterial]-(sc:SupplyChain)-[:SupplyToZone]->(wz:WorkZone)-[:ZoneDeliversWork]->(cw:CompletedWork)
+RETURN rm.MaterialName AS Material,
+       rm.Supplier AS Supplier,
+       wz.ZoneName AS WorkZone,
+       cw.WorkName AS CompletedWork,
+       cw.QualityGrade AS QualityGrade
+LIMIT 50
+
+
+/* ===== Query 10: Workforce and Inspection Activity =====
+   Aggregate inspection workload per worker across their assigned site —
+   identifies the busiest inspectors and their departments. */
+
+MATCH (bs:BuildingSite)<-[:WorkerAssignedToSite]-(w:Worker)<-[:InspectionByWorker]-(ie:InspectionEvent)
+RETURN bs.ProjectName AS Site,
+       w.FirstName AS Worker,
+       w.Trade AS Trade,
+       COUNT(ie) AS InspectionCount
+LIMIT 50
+
+
+/* ==========================================================================
+ * ADVANCED QUERIES (11-20)
+ * Multi-hop traversals, filtering, aggregation, and cross-domain analysis
+ * ========================================================================== */
+
+
+/* ===== Query 11: Failed Inspections on Active Assets =====
+   4-hop: BuildingSite → WorkZone → ConstructionAsset ← InspectionEvent → Worker
+   Finds failed inspections on active assets — highlights assets needing remediation
+   and the inspectors who flagged them. */
+
+MATCH (bs:BuildingSite)-[:SiteContainsZone]->(wz:WorkZone)-[:ZoneDeploysAsset]->(a:ConstructionAsset)<-[:InspectionTargetsAsset]-(ie:InspectionEvent)-[:InspectionByWorker]->(w:Worker)
+WHERE a.Status = 'Active' AND ie.Result = 'Fail'
+RETURN bs.ProjectName AS Site,
+       wz.ZoneName AS WorkZone,
+       a.AssetName AS Asset,
+       a.AssetType AS AssetType,
+       ie.InspectionType AS InspectionType,
+       ie.Date AS InspectionDate,
+       w.FirstName AS Inspector
+ORDER BY ie.Date DESC
+LIMIT 50
+
+
+/* ===== Query 12: Assets with Both Safety Incidents and Inspections =====
+   Two-pattern match: finds assets in zones that had safety incidents
+   AND that also received inspections — correlates incident severity with
+   inspection outcomes for root-cause analysis. */
+
+MATCH (wz:WorkZone)-[:ZoneDeploysAsset]->(a:ConstructionAsset)<-[:InspectionTargetsAsset]-(ie:InspectionEvent)
+MATCH (si:SafetyIncident)-[:IncidentInZone]->(wz)
+RETURN a.AssetName AS Asset,
+       a.AssetType AS AssetType,
+       wz.ZoneName AS WorkZone,
+       si.IncidentType AS IncidentType,
+       si.Severity AS IncidentSeverity,
+       ie.InspectionType AS InspectionType,
+       ie.Result AS InspectionResult,
+       ie.Date AS InspectionDate
+ORDER BY si.Severity DESC
+LIMIT 50
+
+
+/* ===== Query 13: Building Site Work Completion Analysis =====
+   4-hop: BuildingSite → WorkZone → CompletedWork
+   Aggregates completed deliverables per site and quality grade —
+   shows project delivery progress across all sites. */
+
+MATCH (bs:BuildingSite)-[:SiteContainsZone]->(wz:WorkZone)-[:ZoneDeliversWork]->(cw:CompletedWork)
+RETURN bs.ProjectName AS Site,
+       bs.City AS City,
+       cw.QualityGrade AS QualityGrade,
+       COUNT(cw) AS CompletedItems,
+       wz.ZoneName AS WorkZone
+ORDER BY CompletedItems DESC
+LIMIT 50
+
+
+/* ===== Query 14: Material-to-Work Cost Traceability =====
+   5-hop end-to-end: RawMaterial → SupplyChain → WorkZone → CompletedWork
+   Compares material input cost with completed work output —
+   enables cost-per-deliverable analysis across the supply chain. */
+
+MATCH (rm:RawMaterial)<-[:SupplyFromMaterial]-(sc:SupplyChain)-[:SupplyToZone]->(wz:WorkZone)-[:ZoneDeliversWork]->(cw:CompletedWork)
+RETURN rm.MaterialName AS Material,
+       rm.MaterialType AS MaterialType,
+       rm.UnitCost AS UnitCost,
+       rm.UnitOfMeasure AS UOM,
+       wz.ZoneName AS WorkZone,
+       cw.WorkName AS CompletedWork,
+       cw.QualityGrade AS QualityGrade,
+       sc.Quantity AS SuppliedQty
+ORDER BY rm.UnitCost DESC
+LIMIT 50
+
+
+/* ===== Query 15: IoT Sensor Coverage Gap Analysis =====
+   Finds assets with sensors that are NOT in Active status —
+   highlights monitoring gaps on the site that may pose safety risks.
+   (ISO 19650 requires monitored asset lifecycle data.) */
+
+MATCH (bs:BuildingSite)-[:SiteContainsZone]->(wz:WorkZone)-[:ZoneDeploysAsset]->(a:ConstructionAsset)<-[:SensorMonitorsAsset]-(s:IoTSensor)
+WHERE s.Status <> 'Active'
+RETURN bs.ProjectName AS Site,
+       a.AssetName AS Asset,
+       a.AssetType AS AssetType,
+       s.SensorName AS Sensor,
+       s.SensorType AS SensorType,
+       s.Status AS SensorStatus,
+       wz.ZoneName AS WorkZone
+ORDER BY a.AssetType ASC
+LIMIT 50
+
+
+/* ===== Query 16: High-Cost Material Supply Path =====
+   Traces expensive materials (unit cost > 50) through the supply chain
+   into work zones and the assets deployed there — reveals where
+   high-value materials are consumed on site. */
+
+MATCH (rm:RawMaterial)<-[:SupplyFromMaterial]-(sc:SupplyChain)-[:SupplyToZone]->(wz:WorkZone)-[:ZoneDeploysAsset]->(a:ConstructionAsset)
+WHERE rm.UnitCost > 50
+RETURN rm.MaterialName AS Material,
+       rm.UnitCost AS UnitCost,
+       rm.Supplier AS Supplier,
+       rm.UnitOfMeasure AS UOM,
+       wz.ZoneName AS WorkZone,
+       wz.ZoneType AS ZoneType,
+       a.AssetName AS Asset,
+       sc.Quantity AS Quantity
+ORDER BY rm.UnitCost DESC
+LIMIT 50
+
+
+/* ===== Query 17: Storage Utilization with Material Economics =====
+   3-hop: BuildingSite ← MaterialStorage → RawMaterial
+   Calculates storage fill level and inventory value per depot —
+   identifies overstocked or under-utilised storage areas. */
+
+MATCH (bs:BuildingSite)<-[:StorageAtSite]-(ms:MaterialStorage)-[:StorageHoldsMaterial]->(rm:RawMaterial)
+RETURN bs.ProjectName AS Site,
+       ms.StorageName AS Storage,
+       ms.Capacity AS Capacity,
+       ms.CurrentLevel AS CurrentLevel,
+       rm.MaterialName AS Material,
+       rm.UnitCost AS UnitCost,
+       rm.UnitOfMeasure AS UOM
+ORDER BY ms.CurrentLevel DESC
+LIMIT 50
+
+
+/* ===== Query 18: Top Inspectors by Workload =====
+   4-hop: BuildingSite ← Worker ← InspectionEvent → ConstructionAsset
+   Groups by worker to find the most active inspectors — shows
+   total inspections performed and the range of assets covered. */
+
+MATCH (bs:BuildingSite)<-[:WorkerAssignedToSite]-(w:Worker)<-[:InspectionByWorker]-(ie:InspectionEvent)-[:InspectionTargetsAsset]->(a:ConstructionAsset)
+RETURN bs.ProjectName AS Site,
+       w.FirstName AS Inspector,
+       w.Trade AS Trade,
+       w.ContractorCompany AS Company,
+       COUNT(ie) AS InspectionCount
+ORDER BY InspectionCount DESC
+LIMIT 50
+
+
+/* ===== Query 19: Supply Chain to Completed Work Pairs =====
+   Explores which work zones receive materials via supply chains
+   and what completed work they deliver — reveals material flow
+   from supplier to finished deliverable. */
+
+MATCH (wz:WorkZone)<-[:SupplyToZone]-(sc:SupplyChain)-[:SupplyFromMaterial]->(rm:RawMaterial)
+MATCH (wz)-[:ZoneDeliversWork]->(cw:CompletedWork)
+RETURN wz.ZoneName AS WorkZone,
+       sc.SupplyId AS SupplyChain,
+       rm.MaterialName AS Material,
+       sc.Quantity AS SuppliedQty,
+       cw.WorkName AS CompletedWork,
+       cw.QualityGrade AS QualityGrade
+ORDER BY wz.ZoneName ASC
+LIMIT 50
+
+
+/* ===== Query 20: Full Site Safety Risk Profile =====
+   5-hop: BuildingSite → WorkZone → ConstructionAsset ← IoTSensor,
+   plus SafetyIncident → WorkZone
+   Aggregates Critical and High severity incidents per site to build
+   a safety risk heatmap — essential for CDM compliance reporting. */
+
+MATCH (bs:BuildingSite)-[:SiteContainsZone]->(wz:WorkZone)-[:ZoneDeploysAsset]->(a:ConstructionAsset)<-[:SensorMonitorsAsset]-(s:IoTSensor)
+MATCH (si:SafetyIncident)-[:IncidentInZone]->(wz)
+WHERE si.Severity IN ['Critical', 'High']
+RETURN bs.ProjectName AS Site,
+       bs.City AS City,
+       bs.Country AS Country,
+       wz.ZoneName AS WorkZone,
+       a.AssetName AS Asset,
+       COUNT(si) AS CriticalIncidentCount
+ORDER BY CriticalIncidentCount DESC
+LIMIT 50

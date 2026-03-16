@@ -1,17 +1,21 @@
 <#
 .SYNOPSIS
-    Deploy a Real-Time Intelligence (KQL) Dashboard for Oil & Gas Refinery telemetry.
+    Deploy a Real-Time Intelligence (KQL) Dashboard for Construction Building Site telemetry.
 .DESCRIPTION
     Creates a KQLDashboard in Microsoft Fabric connected to the Eventhouse KQL database,
-    with 8 pre-built tiles covering:
-      1. Sensor Readings Over Time (line/timechart)
-      2. Active Alerts by Severity (pie chart)
-      3. Alert Trend by Severity (line/timechart)
-      4. Top Sensors by Reading Count (table)
-      5. Anomaly Detection - Out-of-Range Readings (table)
-      6. Equipment Maintenance Timeline (table)
-      7. Process Unit Live Status (table)
-      8. Production Output Over Time (line/timechart)
+    with 12 pre-built tiles covering:
+      1. Sensor Readings by Zone (line chart)
+      2. Safety Incidents by Severity (pie chart)
+      3. Incident Trend Over Time (line chart)
+      4. Live Site Asset Map (map)
+      5. Top Sensors by Alert Count (table)
+      6. Dust & Noise Compliance (table)
+      7. Material Deliveries Today (table)
+      8. Work Progress per Zone (bar chart)
+      9. Unacknowledged Safety Alerts (table)
+     10. Asset Utilization Rate (bar chart)
+     11. Overdue Inspections (table)
+     12. Worker Activity on Site (stat card)
 
     Uses the Fabric REST API for KQLDashboard items with the standard
     RealTimeDashboard.json definition (schema version 20).
@@ -26,13 +30,13 @@
 .PARAMETER QueryServiceUri
     The Kusto query service URI (auto-detected from Eventhouse if omitted).
 .PARAMETER DashboardName
-    Display name for the dashboard (default: RefineryTelemetryDashboard).
+    Display name for the dashboard (default: ConstructionSiteDashboard).
 #>
 param(
     [Parameter(Mandatory=$true)]  [string]$WorkspaceId,
     [Parameter(Mandatory=$false)] [string]$KqlDatabaseId,
     [Parameter(Mandatory=$false)] [string]$QueryServiceUri,
-    [Parameter(Mandatory=$false)] [string]$DashboardName = "RefineryTelemetryDashboard"
+    [Parameter(Mandatory=$false)] [string]$DashboardName = "ConstructionSiteDashboard"
 )
 
 # ── Authentication ──────────────────────────────────────────────────────────
@@ -111,13 +115,13 @@ function New-VisualOptions {
 }
 
 $tiles = @(
-    # ── Tile 1: Sensor Readings Over Time (line chart) ──────────────────
+    # ── Tile 1: Sensor Readings by Zone (line chart) ────────────────────
     @{
         id            = [guid]::NewGuid().ToString()
-        title         = "Sensor Readings Over Time"
+        title         = "Sensor Readings by Zone"
         query         = @"
-SensorReading
-| summarize AvgReading = avg(ReadingValue) by bin(Timestamp, 15m), SensorType
+SiteSensorReading
+| summarize AvgValue = avg(Value) by bin(Timestamp, 15m), ZoneId
 | order by Timestamp asc
 "@
         layout        = @{ x = 0; y = 0; width = 12; height = 6 }
@@ -128,12 +132,12 @@ SensorReading
         usedParamVariables = @()
     },
 
-    # ── Tile 2: Equipment Alerts by Severity (pie) ──────────────────────
+    # ── Tile 2: Safety Incidents by Severity (pie) ──────────────────────
     @{
         id            = [guid]::NewGuid().ToString()
-        title         = "Equipment Alerts by Severity"
+        title         = "Safety Incidents by Severity"
         query         = @"
-EquipmentAlert
+SafetyIncidentLog
 | summarize Count = count() by Severity
 | order by Count desc
 "@
@@ -145,13 +149,13 @@ EquipmentAlert
         usedParamVariables = @()
     },
 
-    # ── Tile 3: Alert Trend Over Time (line) ────────────────────────────
+    # ── Tile 3: Incident Trend Over Time (line) ────────────────────────
     @{
         id            = [guid]::NewGuid().ToString()
-        title         = "Alert Trend Over Time"
+        title         = "Incident Trend Over Time"
         query         = @"
-EquipmentAlert
-| summarize AlertCount = count() by bin(Timestamp, 1h), Severity
+SafetyIncidentLog
+| summarize IncidentCount = count() by bin(Timestamp, 1h), Severity
 | order by Timestamp asc
 "@
         layout        = @{ x = 18; y = 0; width = 6; height = 6 }
@@ -162,22 +166,14 @@ EquipmentAlert
         usedParamVariables = @()
     },
 
-    # ── Tile 4: Refinery Locations Map ──────────────────────────────────
+    # ── Tile 4: Live Site Asset Map ─────────────────────────────────────
     @{
         id            = [guid]::NewGuid().ToString()
-        title         = "Refinery Locations"
+        title         = "Live Site Asset Map"
         query         = @"
-datatable(RefineryName:string, Latitude:real, Longitude:real, City:string, Country:string, CapacityBPD:long) [
-    "Gulf Coast Refinery",   29.7604,  -95.3698,  "Houston",       "United States", 550000,
-    "Baytown Complex",       29.7355,  -94.9774,  "Baytown",       "United States", 550000,
-    "North Sea Refinery",    56.0234,   -3.7135,  "Grangemouth",   "United Kingdom", 550000,
-    "Rotterdam Europoort",   51.9496,    4.1493,  "Rotterdam",     "Netherlands",   550000,
-    "Singapore Jurong",       1.2655,  103.6990,  "Jurong Island", "Singapore",     550000,
-    "Alberta Oil Sands",     56.7264, -111.3803,  "Fort McMurray", "Canada",        550000,
-    "Middle East Hub",       24.1100,   52.7300,  "Ruwais",        "UAE",           550000,
-    "Lagos Coastal",          6.5244,    3.3792,  "Lagos",         "Nigeria",       550000
-]
-| project RefineryName, Latitude, Longitude, City, Country, CapacityBPD
+AssetStatusStream
+| summarize arg_max(Timestamp, *) by AssetId
+| project AssetId, Timestamp, Status, LocationLat, LocationLon, OperatorId, FuelLevel
 "@
         layout        = @{ x = 0; y = 6; width = 8; height = 6 }
         pageId        = $pageId
@@ -187,17 +183,17 @@ datatable(RefineryName:string, Latitude:real, Longitude:real, City:string, Count
         usedParamVariables = @()
     },
 
-    # ── Tile 5: Top Sensors by Reading Count (table) ────────────────────
+    # ── Tile 5: Top Sensors by Alert Count (table) ─────────────────────
     @{
         id            = [guid]::NewGuid().ToString()
-        title         = "Top Sensors by Reading Count"
+        title         = "Top Sensors by Alert Count"
         query         = @"
-SensorReading
+SiteSensorReading
 | summarize Readings = count(),
-            AvgValue = round(avg(ReadingValue), 2),
-            MinValue = round(min(ReadingValue), 2),
-            MaxValue = round(max(ReadingValue), 2)
-        by SensorId, SensorType, MeasurementUnit
+            AvgValue = round(avg(Value), 2),
+            MinValue = round(min(Value), 2),
+            MaxValue = round(max(Value), 2)
+        by SensorId, ReadingType, Unit
 | top 20 by Readings desc
 "@
         layout        = @{ x = 8; y = 6; width = 8; height = 6 }
@@ -208,16 +204,18 @@ SensorReading
         usedParamVariables = @()
     },
 
-    # ── Tile 6: Anomaly Detection (table) ───────────────────────────────
+    # ── Tile 6: Dust & Noise Compliance (table) ────────────────────────
     @{
         id            = [guid]::NewGuid().ToString()
-        title         = "Anomaly Detections"
+        title         = "Dust & Noise Compliance"
         query         = @"
-SensorReading
-| where IsAnomaly == true
-| project Timestamp, SensorId, SensorType, ReadingValue, MeasurementUnit, QualityFlag, EquipmentId
-| order by Timestamp desc
-| take 100
+SiteSensorReading
+| where ReadingType in ("dust", "noise")
+| summarize AvgValue = round(avg(Value), 2),
+            MaxValue = round(max(Value), 2),
+            Readings = count()
+        by ZoneId, ReadingType, Unit
+| order by MaxValue desc
 "@
         layout        = @{ x = 16; y = 6; width = 8; height = 6 }
         pageId        = $pageId
@@ -227,36 +225,17 @@ SensorReading
         usedParamVariables = @()
     },
 
-    # ── Tile 7: Process Unit Throughput (line) ──────────────────────────
+    # ── Tile 7: Material Deliveries Today (table) ──────────────────────
     @{
         id            = [guid]::NewGuid().ToString()
-        title         = "Process Unit Throughput Over Time"
+        title         = "Material Deliveries Today"
         query         = @"
-ProcessMetric
-| summarize AvgThroughput = avg(ThroughputBPH),
-            AvgYield = avg(YieldPercent)
-        by bin(Timestamp, 1h), ProcessUnitId
-| order by Timestamp asc
+MaterialDeliveryEvent
+| where Timestamp >= startofday(now())
+| project Timestamp, DeliveryId, MaterialId, Quantity, SupplierId, ZoneId, ReceivedBy
+| order by Timestamp desc
 "@
         layout        = @{ x = 0; y = 12; width = 8; height = 5 }
-        pageId        = $pageId
-        visualType    = "line"
-        dataSourceId  = $dataSourceId
-        visualOptions = New-VisualOptions
-        usedParamVariables = @()
-    },
-
-    # ── Tile 8: Pipeline Flow Status (table) ───────────────────────────
-    @{
-        id            = [guid]::NewGuid().ToString()
-        title         = "Pipeline Flow Status"
-        query         = @"
-PipelineFlow
-| summarize arg_max(Timestamp, *) by PipelineId
-| project PipelineId, Timestamp, FlowRateBPH, PressurePSI, TemperatureF, ViscosityCp, IsFlowNormal
-| order by PipelineId asc
-"@
-        layout        = @{ x = 8; y = 12; width = 8; height = 5 }
         pageId        = $pageId
         visualType    = "table"
         dataSourceId  = $dataSourceId
@@ -264,15 +243,34 @@ PipelineFlow
         usedParamVariables = @()
     },
 
-    # ── Tile 9: Tank Levels (table) ─────────────────────────────────────
+    # ── Tile 8: Work Progress per Zone (bar chart) ─────────────────────
     @{
         id            = [guid]::NewGuid().ToString()
-        title         = "Current Tank Levels"
+        title         = "Work Progress per Zone"
         query         = @"
-TankLevel
-| summarize arg_max(Timestamp, *) by TankId
-| project TankId, Timestamp, LevelBarrels, LevelPercent, TemperatureF, ProductId, IsOverflow
-| order by LevelPercent desc
+WorkProgressMetric
+| summarize arg_max(Timestamp, *) by ZoneId, TaskName
+| project ZoneId, TaskName, ProgressPercent, WorkerId, Notes
+| order by ZoneId asc
+"@
+        layout        = @{ x = 8; y = 12; width = 8; height = 5 }
+        pageId        = $pageId
+        visualType    = "bar"
+        dataSourceId  = $dataSourceId
+        visualOptions = New-VisualOptions
+        usedParamVariables = @()
+    },
+
+    # ── Tile 9: Unacknowledged Safety Alerts (table) ───────────────────
+    @{
+        id            = [guid]::NewGuid().ToString()
+        title         = "Unacknowledged Safety Alerts"
+        query         = @"
+SafetyIncidentLog
+| where Status == "Open"
+| project Timestamp, IncidentId, IncidentType, Severity, ZoneId, WorkerId, Description
+| order by Timestamp desc
+| take 50
 "@
         layout        = @{ x = 16; y = 12; width = 8; height = 5 }
         pageId        = $pageId
@@ -282,18 +280,39 @@ TankLevel
         usedParamVariables = @()
     },
 
-    # ── Tile 10: Unacknowledged Alerts (table) ──────────────────────────
+    # ── Tile 10: Asset Utilization Rate (bar chart) ────────────────────
     @{
         id            = [guid]::NewGuid().ToString()
-        title         = "Unacknowledged Alerts"
+        title         = "Asset Utilization Rate"
         query         = @"
-EquipmentAlert
-| where IsAcknowledged == false
-| project Timestamp, AlertId, SensorId, EquipmentId, AlertType, Severity, ReadingValue, ThresholdValue, Message
-| order by Timestamp desc
+AssetStatusStream
+| summarize TotalReadings = count(),
+            OperatingReadings = countif(Status == "Operating")
+        by AssetId
+| extend UtilizationPct = round(100.0 * OperatingReadings / TotalReadings, 1)
+| project AssetId, UtilizationPct, OperatingReadings, TotalReadings
+| order by UtilizationPct desc
+"@
+        layout        = @{ x = 0; y = 17; width = 8; height = 5 }
+        pageId        = $pageId
+        visualType    = "bar"
+        dataSourceId  = $dataSourceId
+        visualOptions = New-VisualOptions
+        usedParamVariables = @()
+    },
+
+    # ── Tile 11: Overdue Inspections (table) ───────────────────────────
+    @{
+        id            = [guid]::NewGuid().ToString()
+        title         = "Overdue Inspections"
+        query         = @"
+FactInspectionEvent
+| where NextDueDate < now()
+| project InspectionId, AssetId, InspectorId, InspectionDate, NextDueDate, Result, Notes
+| order by NextDueDate asc
 | take 50
 "@
-        layout        = @{ x = 0; y = 17; width = 12; height = 5 }
+        layout        = @{ x = 8; y = 17; width = 8; height = 5 }
         pageId        = $pageId
         visualType    = "table"
         dataSourceId  = $dataSourceId
@@ -301,35 +320,18 @@ EquipmentAlert
         usedParamVariables = @()
     },
 
-    # ── Tile 11: Sensor Quality Flag Distribution (pie) ─────────────────
+    # ── Tile 12: Worker Activity on Site (stat card) ───────────────────
     @{
         id            = [guid]::NewGuid().ToString()
-        title         = "Sensor Quality Flag Distribution"
+        title         = "Worker Activity on Site"
         query         = @"
-SensorReading
-| summarize Count = count() by QualityFlag
-| order by Count desc
+AssetStatusStream
+| where Timestamp >= ago(24h)
+| summarize ActiveWorkers = dcount(OperatorId)
 "@
-        layout        = @{ x = 12; y = 17; width = 6; height = 5 }
+        layout        = @{ x = 16; y = 17; width = 8; height = 5 }
         pageId        = $pageId
-        visualType    = "pie"
-        dataSourceId  = $dataSourceId
-        visualOptions = New-VisualOptions
-        usedParamVariables = @()
-    },
-
-    # ── Tile 12: Tank Level Trend (line) ────────────────────────────────
-    @{
-        id            = [guid]::NewGuid().ToString()
-        title         = "Tank Level Trend"
-        query         = @"
-TankLevel
-| summarize AvgLevel = avg(LevelPercent) by bin(Timestamp, 1h), TankId
-| order by Timestamp asc
-"@
-        layout        = @{ x = 18; y = 17; width = 6; height = 5 }
-        pageId        = $pageId
-        visualType    = "line"
+        visualType    = "stat"
         dataSourceId  = $dataSourceId
         visualOptions = New-VisualOptions
         usedParamVariables = @()
@@ -359,7 +361,7 @@ $dashboardDef = @{
     pages      = @(
         @{
             id   = $pageId
-            name = "Refinery Overview"
+            name = "Construction Site Overview"
         }
     )
     tiles      = $tiles
@@ -376,7 +378,7 @@ Write-Host "Creating KQL Dashboard (type=KQLDashboard)..." -ForegroundColor Yell
 $createBody = @{
     displayName = $DashboardName
     type        = "KQLDashboard"
-    description = "Real-Time Intelligence dashboard for Oil and Gas Refinery sensor telemetry, alerts, maintenance, and production monitoring"
+    description = "Real-Time Intelligence dashboard for Construction Building Site sensor telemetry, safety incidents, asset tracking, and work progress monitoring"
 } | ConvertTo-Json -Depth 5
 
 $dashboardId = $null
@@ -515,12 +517,12 @@ foreach ($t in $tiles) {
 }
 Write-Host ""
 Write-Host "KQL Tables used:" -ForegroundColor White
-Write-Host "  - SensorReading    (SensorId, EquipmentId, RefineryId, Timestamp, ReadingValue, MeasurementUnit, SensorType, QualityFlag, IsAnomaly)"
-Write-Host "  - EquipmentAlert   (AlertId, SensorId, EquipmentId, Timestamp, AlertType, Severity, ReadingValue, ThresholdValue, Message, IsAcknowledged)"
-Write-Host "  - ProcessMetric    (ProcessUnitId, Timestamp, ThroughputBPH, YieldPercent, PressurePSI, ...)"
-Write-Host "  - PipelineFlow     (PipelineId, Timestamp, FlowRateBPH, PressurePSI, TemperatureF, IsFlowNormal)"
-Write-Host "  - TankLevel        (TankId, Timestamp, LevelBarrels, LevelPercent, TemperatureF, ProductId, IsOverflow)"
-Write-Host "  - datatable        (Refinery locations for map tile)"
+Write-Host "  - SiteSensorReading      (SensorId, Timestamp, ReadingType, Value, Unit, ZoneId, Quality)"
+Write-Host "  - SafetyIncidentLog      (IncidentId, Timestamp, IncidentType, Severity, ZoneId, WorkerId, Status, Description)"
+Write-Host "  - AssetStatusStream      (AssetId, Timestamp, Status, LocationLat, LocationLon, OperatorId, FuelLevel)"
+Write-Host "  - MaterialDeliveryEvent  (DeliveryId, Timestamp, MaterialId, Quantity, SupplierId, ZoneId, ReceivedBy)"
+Write-Host "  - WorkProgressMetric     (ZoneId, Timestamp, TaskName, ProgressPercent, WorkerId, Notes)"
+Write-Host "  - FactInspectionEvent    (Lakehouse table for Overdue Inspections tile)"
 Write-Host ""
 Write-Host "Open the dashboard in Fabric to view live data." -ForegroundColor White
 Write-Host "=== KQL Dashboard Deployment Complete ===" -ForegroundColor Cyan

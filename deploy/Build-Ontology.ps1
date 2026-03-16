@@ -1,5 +1,5 @@
 # Build-Ontology.ps1
-# Builds the complete Oil & Gas Refinery Ontology definition for Microsoft Fabric
+# Builds the complete Construction Building Site Ontology definition for Microsoft Fabric
 # Entity Types, Data Bindings (Lakehouse + KQL), Relationships, and Contextualizations
 param(
     [string]$WorkspaceId,
@@ -28,9 +28,9 @@ function DeterministicGuid([string]$seed) {
 
 # ============================================================================
 # ID Allocation Plan (unique 64-bit integers)
-# Entity Type IDs:      1001 - 1013
+# Entity Type IDs:      1001 - 1011
 # Property IDs:         2001 - 2999 (allocated per entity)
-# Relationship IDs:     3001 - 3020
+# Relationship IDs:     3001 - 3012
 # Timeseries Prop IDs:  4001 - 4099
 # ============================================================================
 
@@ -40,167 +40,136 @@ function DeterministicGuid([string]$seed) {
 
 $entityTypes = @()
 
-# --- DimRefinery (ID: 1001) ---
+# --- DimBuildingSite (ID: 1001) ---
 $entityTypes += @{
-    id = "1001"; name = "Refinery"
+    id = "1001"; name = "BuildingSite"
     entityIdParts = @("2001")
     displayNamePropertyId = "2002"
     properties = @(
-        @{ id = "2001"; name = "RefineryId"; valueType = "String" },
-        @{ id = "2002"; name = "RefineryName"; valueType = "String" },
-        @{ id = "2003"; name = "Country"; valueType = "String" },
-        @{ id = "2004"; name = "State"; valueType = "String" },
-        @{ id = "2005"; name = "City"; valueType = "String" },
-        @{ id = "2006"; name = "Latitude"; valueType = "Double" },
-        @{ id = "2007"; name = "Longitude"; valueType = "Double" },
-        @{ id = "2008"; name = "CapacityBPD"; valueType = "BigInt" },
-        @{ id = "2009"; name = "YearBuilt"; valueType = "BigInt" },
-        @{ id = "2010"; name = "Status"; valueType = "String" },
-        @{ id = "2011"; name = "Operator"; valueType = "String" }
+        @{ id = "2001"; name = "SiteId"; valueType = "String" },
+        @{ id = "2002"; name = "ProjectName"; valueType = "String" },
+        @{ id = "2003"; name = "City"; valueType = "String" },
+        @{ id = "2004"; name = "Country"; valueType = "String" },
+        @{ id = "2005"; name = "StartDate"; valueType = "String" },
+        @{ id = "2006"; name = "EndDate"; valueType = "String" },
+        @{ id = "2007"; name = "ContractValue"; valueType = "Double" },
+        @{ id = "2008"; name = "Status"; valueType = "String" }
     )
-    tableName = "dimrefinery"
+    tableName = "dimbuildingsite"
 }
 
-# --- DimProcessUnit (ID: 1002) ---
+# --- DimWorkZone (ID: 1002) ---
 $entityTypes += @{
-    id = "1002"; name = "ProcessUnit"
+    id = "1002"; name = "WorkZone"
     entityIdParts = @("2101")
     displayNamePropertyId = "2102"
     properties = @(
-        @{ id = "2101"; name = "ProcessUnitId"; valueType = "String" },
-        @{ id = "2102"; name = "ProcessUnitName"; valueType = "String" },
-        @{ id = "2103"; name = "ProcessUnitType"; valueType = "String" },
-        @{ id = "2104"; name = "RefineryId"; valueType = "String" },
-        @{ id = "2105"; name = "CapacityBPD"; valueType = "BigInt" },
-        @{ id = "2106"; name = "DesignTemperatureF"; valueType = "Double" },
-        @{ id = "2107"; name = "DesignPressurePSI"; valueType = "Double" },
-        @{ id = "2108"; name = "YearInstalled"; valueType = "BigInt" },
-        @{ id = "2109"; name = "Status"; valueType = "String" },
-        @{ id = "2110"; name = "Description"; valueType = "String" }
+        @{ id = "2101"; name = "ZoneId"; valueType = "String" },
+        @{ id = "2102"; name = "ZoneName"; valueType = "String" },
+        @{ id = "2103"; name = "ZoneType"; valueType = "String" },
+        @{ id = "2104"; name = "SiteId"; valueType = "String" },
+        @{ id = "2105"; name = "ProgressPercent"; valueType = "Double" },
+        @{ id = "2106"; name = "StartDate"; valueType = "String" },
+        @{ id = "2107"; name = "PlannedEndDate"; valueType = "String" }
     )
-    tableName = "dimprocessunit"
+    tableName = "dimworkzone"
 }
 
-# --- DimEquipment (ID: 1003) ---
+# --- DimConstructionAsset (ID: 1003) ---
 $entityTypes += @{
-    id = "1003"; name = "Equipment"
+    id = "1003"; name = "ConstructionAsset"
     entityIdParts = @("2201")
     displayNamePropertyId = "2202"
     properties = @(
-        @{ id = "2201"; name = "EquipmentId"; valueType = "String" },
-        @{ id = "2202"; name = "EquipmentName"; valueType = "String" },
-        @{ id = "2203"; name = "EquipmentType"; valueType = "String" },
-        @{ id = "2204"; name = "ProcessUnitId"; valueType = "String" },
-        @{ id = "2205"; name = "Manufacturer"; valueType = "String" },
-        @{ id = "2206"; name = "Model"; valueType = "String" },
-        @{ id = "2207"; name = "InstallDate"; valueType = "String" },
-        @{ id = "2208"; name = "LastInspectionDate"; valueType = "String" },
-        @{ id = "2209"; name = "Status"; valueType = "String" },
-        @{ id = "2210"; name = "CriticalityLevel"; valueType = "String" },
-        @{ id = "2211"; name = "ExpectedLifeYears"; valueType = "BigInt" }
+        @{ id = "2201"; name = "AssetId"; valueType = "String" },
+        @{ id = "2202"; name = "AssetName"; valueType = "String" },
+        @{ id = "2203"; name = "AssetType"; valueType = "String" },
+        @{ id = "2204"; name = "Manufacturer"; valueType = "String" },
+        @{ id = "2205"; name = "Status"; valueType = "String" },
+        @{ id = "2206"; name = "ZoneId"; valueType = "String" }
     )
-    tableName = "dimequipment"
+    tableName = "dimconstructionasset"
 }
 
-# --- DimPipeline (ID: 1004) ---
+# --- DimSupplyChain (ID: 1004) ---
 $entityTypes += @{
-    id = "1004"; name = "Pipeline"
+    id = "1004"; name = "SupplyChain"
     entityIdParts = @("2301")
-    displayNamePropertyId = "2302"
+    displayNamePropertyId = "2301"
     properties = @(
-        @{ id = "2301"; name = "PipelineId"; valueType = "String" },
-        @{ id = "2302"; name = "PipelineName"; valueType = "String" },
-        @{ id = "2303"; name = "FromProcessUnitId"; valueType = "String" },
-        @{ id = "2304"; name = "ToProcessUnitId"; valueType = "String" },
-        @{ id = "2305"; name = "RefineryId"; valueType = "String" },
-        @{ id = "2306"; name = "DiameterInches"; valueType = "Double" },
-        @{ id = "2307"; name = "LengthFeet"; valueType = "Double" },
-        @{ id = "2308"; name = "Material"; valueType = "String" },
-        @{ id = "2309"; name = "MaxFlowBPD"; valueType = "BigInt" },
-        @{ id = "2310"; name = "InstalledDate"; valueType = "String" },
-        @{ id = "2311"; name = "Status"; valueType = "String" }
+        @{ id = "2301"; name = "SupplyId"; valueType = "String" },
+        @{ id = "2302"; name = "MaterialId"; valueType = "String" },
+        @{ id = "2303"; name = "OriginZoneId"; valueType = "String" },
+        @{ id = "2304"; name = "DestinationZoneId"; valueType = "String" },
+        @{ id = "2305"; name = "DeliveryDate"; valueType = "String" },
+        @{ id = "2306"; name = "Quantity"; valueType = "Double" }
     )
-    tableName = "dimpipeline"
+    tableName = "dimsupplychain"
 }
 
-# --- DimCrudeOil (ID: 1005) ---
+# --- DimRawMaterial (ID: 1005) ---
 $entityTypes += @{
-    id = "1005"; name = "CrudeOil"
+    id = "1005"; name = "RawMaterial"
     entityIdParts = @("2401")
     displayNamePropertyId = "2402"
     properties = @(
-        @{ id = "2401"; name = "CrudeOilId"; valueType = "String" },
-        @{ id = "2402"; name = "CrudeGradeName"; valueType = "String" },
-        @{ id = "2403"; name = "APIGravity"; valueType = "Double" },
-        @{ id = "2404"; name = "SulfurContentPct"; valueType = "Double" },
-        @{ id = "2405"; name = "Origin"; valueType = "String" },
-        @{ id = "2406"; name = "Classification"; valueType = "String" },
-        @{ id = "2407"; name = "PricePerBarrelUSD"; valueType = "Double" },
-        @{ id = "2408"; name = "Description"; valueType = "String" }
+        @{ id = "2401"; name = "MaterialId"; valueType = "String" },
+        @{ id = "2402"; name = "MaterialName"; valueType = "String" },
+        @{ id = "2403"; name = "MaterialType"; valueType = "String" },
+        @{ id = "2404"; name = "Supplier"; valueType = "String" },
+        @{ id = "2405"; name = "UnitOfMeasure"; valueType = "String" },
+        @{ id = "2406"; name = "UnitCost"; valueType = "Double" }
     )
-    tableName = "dimcrudeoil"
+    tableName = "dimrawmaterial"
 }
 
-# --- DimRefinedProduct (ID: 1006) ---
+# --- DimCompletedWork (ID: 1006) ---
 $entityTypes += @{
-    id = "1006"; name = "RefinedProduct"
+    id = "1006"; name = "CompletedWork"
     entityIdParts = @("2501")
     displayNamePropertyId = "2502"
     properties = @(
-        @{ id = "2501"; name = "ProductId"; valueType = "String" },
-        @{ id = "2502"; name = "ProductName"; valueType = "String" },
-        @{ id = "2503"; name = "ProductCategory"; valueType = "String" },
-        @{ id = "2504"; name = "APIGravity"; valueType = "Double" },
-        @{ id = "2505"; name = "SulfurLimitPPM"; valueType = "Double" },
-        @{ id = "2506"; name = "FlashPointF"; valueType = "Double" },
-        @{ id = "2507"; name = "SpecStandard"; valueType = "String" },
-        @{ id = "2508"; name = "PricePerBarrelUSD"; valueType = "Double" },
-        @{ id = "2509"; name = "Description"; valueType = "String" }
+        @{ id = "2501"; name = "WorkId"; valueType = "String" },
+        @{ id = "2502"; name = "WorkName"; valueType = "String" },
+        @{ id = "2503"; name = "ZoneId"; valueType = "String" },
+        @{ id = "2504"; name = "CompletionDate"; valueType = "String" },
+        @{ id = "2505"; name = "QualityGrade"; valueType = "String" },
+        @{ id = "2506"; name = "InspectedBy"; valueType = "String" }
     )
-    tableName = "dimrefinedproduct"
+    tableName = "dimcompletedwork"
 }
 
-# --- DimStorageTank (ID: 1007) ---
+# --- DimMaterialStorage (ID: 1007) ---
 $entityTypes += @{
-    id = "1007"; name = "StorageTank"
+    id = "1007"; name = "MaterialStorage"
     entityIdParts = @("2601")
     displayNamePropertyId = "2602"
     properties = @(
-        @{ id = "2601"; name = "TankId"; valueType = "String" },
-        @{ id = "2602"; name = "TankName"; valueType = "String" },
-        @{ id = "2603"; name = "RefineryId"; valueType = "String" },
-        @{ id = "2604"; name = "ProductId"; valueType = "String" },
-        @{ id = "2605"; name = "TankType"; valueType = "String" },
-        @{ id = "2606"; name = "CapacityBarrels"; valueType = "BigInt" },
-        @{ id = "2607"; name = "CurrentLevelBarrels"; valueType = "BigInt" },
-        @{ id = "2608"; name = "DiameterFeet"; valueType = "String" },
-        @{ id = "2609"; name = "HeightFeet"; valueType = "String" },
-        @{ id = "2610"; name = "Material"; valueType = "String" },
-        @{ id = "2611"; name = "Status"; valueType = "String" },
-        @{ id = "2612"; name = "LastInspectionDate"; valueType = "String" }
+        @{ id = "2601"; name = "StorageId"; valueType = "String" },
+        @{ id = "2602"; name = "StorageName"; valueType = "String" },
+        @{ id = "2603"; name = "Capacity"; valueType = "Double" },
+        @{ id = "2604"; name = "CurrentLevel"; valueType = "Double" },
+        @{ id = "2605"; name = "MaterialId"; valueType = "String" },
+        @{ id = "2606"; name = "SiteId"; valueType = "String" }
     )
-    tableName = "dimstoragetank"
+    tableName = "dimmaterialstorage"
 }
 
-# --- DimSensor (ID: 1008) ---
+# --- DimIoTSensor (ID: 1008) ---
 $entityTypes += @{
-    id = "1008"; name = "Sensor"
+    id = "1008"; name = "IoTSensor"
     entityIdParts = @("2701")
     displayNamePropertyId = "2702"
     properties = @(
         @{ id = "2701"; name = "SensorId"; valueType = "String" },
         @{ id = "2702"; name = "SensorName"; valueType = "String" },
         @{ id = "2703"; name = "SensorType"; valueType = "String" },
-        @{ id = "2704"; name = "EquipmentId"; valueType = "String" },
-        @{ id = "2705"; name = "MeasurementUnit"; valueType = "String" },
-        @{ id = "2706"; name = "MinRange"; valueType = "Double" },
-        @{ id = "2707"; name = "MaxRange"; valueType = "Double" },
-        @{ id = "2708"; name = "InstallDate"; valueType = "String" },
-        @{ id = "2709"; name = "CalibrationDate"; valueType = "String" },
-        @{ id = "2710"; name = "Status"; valueType = "String" },
-        @{ id = "2711"; name = "Manufacturer"; valueType = "String" }
+        @{ id = "2704"; name = "ZoneId"; valueType = "String" },
+        @{ id = "2705"; name = "AssetId"; valueType = "String" },
+        @{ id = "2706"; name = "Unit"; valueType = "String" },
+        @{ id = "2707"; name = "Status"; valueType = "String" }
     )
-    tableName = "dimsensor"
+    tableName = "dimiotsensor"
     timeseriesTable = "SensorReading"
     timeseriesProperties = @(
         @{ id = "4001"; name = "Timestamp"; valueType = "DateTime" },
@@ -211,105 +180,55 @@ $entityTypes += @{
     timestampColumn = "Timestamp"
 }
 
-# --- DimEmployee (ID: 1009) ---
+# --- DimWorker (ID: 1009) ---
 $entityTypes += @{
-    id = "1009"; name = "Employee"
+    id = "1009"; name = "Worker"
     entityIdParts = @("2801")
     displayNamePropertyId = "2802"
     properties = @(
-        @{ id = "2801"; name = "EmployeeId"; valueType = "String" },
-        @{ id = "2802"; name = "FullName"; valueType = "String" },
-        @{ id = "2803"; name = "Role"; valueType = "String" },
-        @{ id = "2804"; name = "Department"; valueType = "String" },
-        @{ id = "2805"; name = "RefineryId"; valueType = "String" },
-        @{ id = "2806"; name = "HireDate"; valueType = "String" },
-        @{ id = "2807"; name = "CertificationLevel"; valueType = "String" },
-        @{ id = "2808"; name = "ShiftPattern"; valueType = "String" },
-        @{ id = "2809"; name = "Status"; valueType = "String" }
+        @{ id = "2801"; name = "WorkerId"; valueType = "String" },
+        @{ id = "2802"; name = "FirstName"; valueType = "String" },
+        @{ id = "2803"; name = "LastName"; valueType = "String" },
+        @{ id = "2804"; name = "Trade"; valueType = "String" },
+        @{ id = "2805"; name = "ContractorCompany"; valueType = "String" },
+        @{ id = "2806"; name = "CertificationExpiry"; valueType = "String" },
+        @{ id = "2807"; name = "SiteId"; valueType = "String" }
     )
-    tableName = "dimemployee"
-    columnMappings = @{
-        "FullName" = "FirstName"
-    }
+    tableName = "dimworker"
 }
 
-# --- FactMaintenance (ID: 1010) ---
+# --- FactInspectionEvent (ID: 1010) ---
 $entityTypes += @{
-    id = "1010"; name = "MaintenanceEvent"
+    id = "1010"; name = "InspectionEvent"
     entityIdParts = @("2901")
     displayNamePropertyId = "2901"
     properties = @(
-        @{ id = "2901"; name = "MaintenanceId"; valueType = "String" },
-        @{ id = "2902"; name = "EquipmentId"; valueType = "String" },
-        @{ id = "2903"; name = "MaintenanceType"; valueType = "String" },
-        @{ id = "2904"; name = "Priority"; valueType = "String" },
-        @{ id = "2905"; name = "PerformedByEmployeeId"; valueType = "String" },
-        @{ id = "2906"; name = "StartDate"; valueType = "String" },
-        @{ id = "2907"; name = "EndDate"; valueType = "String" },
-        @{ id = "2908"; name = "DurationHours"; valueType = "Double" },
-        @{ id = "2909"; name = "CostUSD"; valueType = "Double" },
-        @{ id = "2910"; name = "Description"; valueType = "String" },
-        @{ id = "2911"; name = "WorkOrderNumber"; valueType = "String" },
-        @{ id = "2912"; name = "Status"; valueType = "String" }
+        @{ id = "2901"; name = "InspectionId"; valueType = "String" },
+        @{ id = "2902"; name = "InspectionType"; valueType = "String" },
+        @{ id = "2903"; name = "AssetId"; valueType = "String" },
+        @{ id = "2904"; name = "InspectorId"; valueType = "String" },
+        @{ id = "2905"; name = "Date"; valueType = "String" },
+        @{ id = "2906"; name = "Result"; valueType = "String" },
+        @{ id = "2907"; name = "NextDueDate"; valueType = "String" }
     )
-    tableName = "factmaintenance"
+    tableName = "factinspectionevent"
 }
 
-# --- FactSafetyAlarm (ID: 1011) ---
+# --- FactSafetyIncident (ID: 1011) ---
 $entityTypes += @{
-    id = "1011"; name = "SafetyAlarm"
+    id = "1011"; name = "SafetyIncident"
     entityIdParts = @("2951")
     displayNamePropertyId = "2951"
     properties = @(
-        @{ id = "2951"; name = "AlarmId"; valueType = "String" },
-        @{ id = "2952"; name = "SensorId"; valueType = "String" },
-        @{ id = "2953"; name = "AlarmType"; valueType = "String" },
-        @{ id = "2954"; name = "Severity"; valueType = "String" },
-        @{ id = "2955"; name = "AlarmTimestamp"; valueType = "String" },
-        @{ id = "2956"; name = "AcknowledgedTimestamp"; valueType = "String" },
-        @{ id = "2957"; name = "ClearedTimestamp"; valueType = "String" },
-        @{ id = "2958"; name = "AlarmValue"; valueType = "Double" },
-        @{ id = "2959"; name = "ThresholdValue"; valueType = "Double" },
-        @{ id = "2960"; name = "Description"; valueType = "String" },
-        @{ id = "2961"; name = "ActionTaken"; valueType = "String" },
-        @{ id = "2962"; name = "AcknowledgedByEmployeeId"; valueType = "String" }
+        @{ id = "2951"; name = "IncidentId"; valueType = "String" },
+        @{ id = "2952"; name = "IncidentType"; valueType = "String" },
+        @{ id = "2953"; name = "Severity"; valueType = "String" },
+        @{ id = "2954"; name = "ZoneId"; valueType = "String" },
+        @{ id = "2955"; name = "WorkerId"; valueType = "String" },
+        @{ id = "2956"; name = "Timestamp"; valueType = "String" },
+        @{ id = "2957"; name = "Status"; valueType = "String" }
     )
-    tableName = "factsafetyalarm"
-}
-
-# --- FactProduction (ID: 1012) ---
-$entityTypes += @{
-    id = "1012"; name = "ProductionRecord"
-    entityIdParts = @("2981")
-    displayNamePropertyId = "2981"
-    properties = @(
-        @{ id = "2981"; name = "ProductionId"; valueType = "String" },
-        @{ id = "2982"; name = "ProcessUnitId"; valueType = "String" },
-        @{ id = "2983"; name = "ProductId"; valueType = "String" },
-        @{ id = "2984"; name = "ProductionDate"; valueType = "String" },
-        @{ id = "2985"; name = "OutputBarrels"; valueType = "BigInt" },
-        @{ id = "2986"; name = "YieldPercent"; valueType = "Double" },
-        @{ id = "2987"; name = "QualityGrade"; valueType = "String" },
-        @{ id = "2988"; name = "EnergyConsumptionMMBTU"; valueType = "Double" },
-        @{ id = "2989"; name = "Notes"; valueType = "String" }
-    )
-    tableName = "factproduction"
-}
-
-# --- BridgeCrudeOilProcessUnit (ID: 1013) ---
-$entityTypes += @{
-    id = "1013"; name = "CrudeOilFeed"
-    entityIdParts = @("2991")
-    displayNamePropertyId = "2991"
-    properties = @(
-        @{ id = "2991"; name = "BridgeId"; valueType = "String" },
-        @{ id = "2992"; name = "CrudeOilId"; valueType = "String" },
-        @{ id = "2993"; name = "ProcessUnitId"; valueType = "String" },
-        @{ id = "2994"; name = "FeedRateBPD"; valueType = "BigInt" },
-        @{ id = "2995"; name = "EffectiveDate"; valueType = "String" },
-        @{ id = "2996"; name = "Notes"; valueType = "String" }
-    )
-    tableName = "bridgecrudeoilprocessunit"
+    tableName = "factsafetyincident"
 }
 
 # ============================================================================
@@ -317,21 +236,18 @@ $entityTypes += @{
 # ============================================================================
 
 $relationships = @(
-    @{ id = "3001"; name = "RefineryHasProcessUnit"; sourceId = "1001"; targetId = "1002" },
-    @{ id = "3002"; name = "ProcessUnitHasEquipment"; sourceId = "1002"; targetId = "1003" },
-    @{ id = "3003"; name = "PipelineFromProcessUnit"; sourceId = "1004"; targetId = "1002" },
-    @{ id = "3004"; name = "RefineryHasPipeline"; sourceId = "1001"; targetId = "1004" },
-    @{ id = "3005"; name = "RefineryHasStorageTank"; sourceId = "1001"; targetId = "1007" },
-    @{ id = "3006"; name = "StorageTankHoldsProduct"; sourceId = "1007"; targetId = "1006" },
-    @{ id = "3007"; name = "EquipmentHasSensor"; sourceId = "1003"; targetId = "1008" },
-    @{ id = "3008"; name = "MaintenanceOnEquipment"; sourceId = "1010"; targetId = "1003" },
-    @{ id = "3009"; name = "MaintenanceByEmployee"; sourceId = "1010"; targetId = "1009" },
-    @{ id = "3010"; name = "AlarmFromSensor"; sourceId = "1011"; targetId = "1008" },
-    @{ id = "3011"; name = "ProductionFromProcessUnit"; sourceId = "1012"; targetId = "1002" },
-    @{ id = "3012"; name = "ProductionOfProduct"; sourceId = "1012"; targetId = "1006" },
-    @{ id = "3013"; name = "RefineryHasEmployee"; sourceId = "1001"; targetId = "1009" },
-    @{ id = "3014"; name = "CrudeFeedToProcessUnit"; sourceId = "1013"; targetId = "1002" },
-    @{ id = "3015"; name = "CrudeFeedFromCrudeOil"; sourceId = "1013"; targetId = "1005" }
+    @{ id = "3001"; name = "SiteContainsZone"; sourceId = "1001"; targetId = "1002" },
+    @{ id = "3002"; name = "ZoneDeploysAsset"; sourceId = "1002"; targetId = "1003" },
+    @{ id = "3003"; name = "SupplyToZone"; sourceId = "1004"; targetId = "1002" },
+    @{ id = "3004"; name = "SupplyFromMaterial"; sourceId = "1004"; targetId = "1005" },
+    @{ id = "3005"; name = "StorageAtSite"; sourceId = "1007"; targetId = "1001" },
+    @{ id = "3006"; name = "StorageHoldsMaterial"; sourceId = "1007"; targetId = "1005" },
+    @{ id = "3007"; name = "SensorMonitorsAsset"; sourceId = "1008"; targetId = "1003" },
+    @{ id = "3008"; name = "IncidentInZone"; sourceId = "1011"; targetId = "1002" },
+    @{ id = "3009"; name = "InspectionTargetsAsset"; sourceId = "1010"; targetId = "1003" },
+    @{ id = "3010"; name = "InspectionByWorker"; sourceId = "1010"; targetId = "1009" },
+    @{ id = "3011"; name = "WorkerAssignedToSite"; sourceId = "1009"; targetId = "1001" },
+    @{ id = "3012"; name = "ZoneDeliversWork"; sourceId = "1002"; targetId = "1006" }
 )
 
 # ============================================================================
@@ -342,7 +258,7 @@ $parts = @()
 
 # --- .platform ---
 $platform = @"
-{"metadata":{"type":"Ontology","displayName":"OilGasRefineryOntology","description":"Oil and Gas Refinery Ontology - entities, relationships, and telemetry for refinery operations"},"config":{"version":"2.0","logicalId":"00000000-0000-0000-0000-000000000000"}}
+{"metadata":{"type":"Ontology","displayName":"ConstructionSiteOntology","description":"Construction Building Site Ontology - entities, relationships, and telemetry for building site operations"},"config":{"version":"2.0","logicalId":"00000000-0000-0000-0000-000000000000"}}
 "@
 $parts += @{ path = ".platform"; payload = (ToBase64 $platform); payloadType = "InlineBase64" }
 
@@ -420,7 +336,7 @@ foreach ($rel in $relationships) {
     # Strategy 1: FK in source entity table (source has a column matching target PK)
     $fkProp = $sourceEntity.properties | Where-Object { $_.name -eq $targetPkName }
     if (-not $fkProp) {
-        # Try common FK patterns like "FromProcessUnitId", "PerformedByEmployeeId", "AcknowledgedByEmployeeId"
+        # Try common FK patterns like "DestinationZoneId", "InspectorWorkerId"
         $fkProp = $sourceEntity.properties | Where-Object { $_.name -like "*$targetPkName" }
     }
 
@@ -431,7 +347,7 @@ foreach ($rel in $relationships) {
         $parts += @{ path = "RelationshipTypes/$($rel.id)/Contextualizations/$ctxGuid.json"; payload = (ToBase64 $ctxJson); payloadType = "InlineBase64" }
     } else {
         # Strategy 2: FK in target entity table (target has a column matching source PK)
-        # This handles "parent has children" relationships (e.g., RefineryHasProcessUnit)
+        # This handles "parent has children" relationships (e.g., SiteContainsZone)
         $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -eq $sourcePkName }
         if (-not $fkPropInTarget) {
             $fkPropInTarget = $targetEntity.properties | Where-Object { $_.name -like "*$sourcePkName" }

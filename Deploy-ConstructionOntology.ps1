@@ -1,12 +1,12 @@
 <#
 .SYNOPSIS
-    Deploys the Oil & Gas Refinery Ontology accelerator to Microsoft Fabric.
+    Deploys the Construction Building Site Ontology accelerator to Microsoft Fabric.
 
 .DESCRIPTION
     This script automates the deployment of:
     1. A Lakehouse with all CSV data files
     2. A Spark Notebook to load CSV files into Delta tables
-    3. An Eventhouse for sensor telemetry streaming data
+    3. An Eventhouse for IoT sensor telemetry streaming data
     4. A Semantic Model with all relationships
     5. An Ontology item
     6. An RTI Dashboard for real-time telemetry visualization (requires tenant setting)
@@ -20,19 +20,19 @@
     Path to the local folder containing CSV data files. Defaults to ./data
 
 .PARAMETER LakehouseName
-    Name for the lakehouse. Defaults to OilGasRefineryLH
+    Name for the lakehouse. Defaults to ConstructionSiteLH
 
 .PARAMETER EventhouseName
-    Name for the eventhouse. Defaults to RefineryTelemetryEH
+    Name for the eventhouse. Defaults to ConstructionTelemetryEH
 
 .PARAMETER SemanticModelName
-    Name for the semantic model. Defaults to OilGasRefineryModel
+    Name for the semantic model. Defaults to ConstructionSiteModel
 
 .PARAMETER OntologyName
-    Name for the ontology. Defaults to OilGasRefineryOntology
+    Name for the ontology. Defaults to ConstructionSiteOntology
 
 .EXAMPLE
-    .\Deploy-OilGasOntology.ps1 -WorkspaceId "your-workspace-guid"
+    .\Deploy-ConstructionOntology.ps1 -WorkspaceId "your-workspace-guid"
 #>
 
 [CmdletBinding()]
@@ -44,16 +44,16 @@ param(
     [string]$DataFolder,
 
     [Parameter(Mandatory = $false)]
-    [string]$LakehouseName = "OilGasRefineryLH",
+    [string]$LakehouseName = "ConstructionSiteLH",
 
     [Parameter(Mandatory = $false)]
-    [string]$EventhouseName = "RefineryTelemetryEH",
+    [string]$EventhouseName = "ConstructionTelemetryEH",
 
     [Parameter(Mandatory = $false)]
-    [string]$SemanticModelName = "OilGasRefineryModel",
+    [string]$SemanticModelName = "ConstructionSiteModel",
 
     [Parameter(Mandatory = $false)]
-    [string]$OntologyName = "OilGasRefineryOntology"
+    [string]$OntologyName = "ConstructionSiteOntology"
 )
 
 # Resolve script root for both dot-sourced and powershell -File invocations
@@ -70,19 +70,19 @@ $OneLakeBase = "https://onelake.dfs.fabric.microsoft.com"
 
 # CSV files to upload to lakehouse (not telemetry)
 $LakehouseFiles = @(
-    "DimRefinery.csv",
-    "DimProcessUnit.csv",
-    "DimEquipment.csv",
-    "DimPipeline.csv",
-    "DimCrudeOil.csv",
-    "DimRefinedProduct.csv",
-    "DimStorageTank.csv",
-    "DimSensor.csv",
-    "DimEmployee.csv",
-    "FactMaintenance.csv",
-    "FactSafetyAlarm.csv",
+    "DimBuildingSite.csv",
+    "DimWorkZone.csv",
+    "DimConstructionAsset.csv",
+    "DimSupplyChain.csv",
+    "DimRawMaterial.csv",
+    "DimCompletedWork.csv",
+    "DimMaterialStorage.csv",
+    "DimIoTSensor.csv",
+    "DimWorker.csv",
+    "FactInspectionEvent.csv",
+    "FactSafetyIncident.csv",
     "FactProduction.csv",
-    "BridgeCrudeOilProcessUnit.csv"
+    "BridgeRawMaterialWorkZone.csv"
 )
 
 # Telemetry file for Eventhouse
@@ -343,7 +343,7 @@ function Upload-FileToOneLake {
 
 Write-Host ""
 Write-Host "======================================================" -ForegroundColor Yellow
-Write-Host "  Oil & Gas Refinery Ontology - Fabric Deployment" -ForegroundColor Yellow
+Write-Host "  Construction Building Site Ontology - Fabric Deployment" -ForegroundColor Yellow
 Write-Host "======================================================" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Workspace ID  : $WorkspaceId"
@@ -387,7 +387,7 @@ Write-Step "Step 1: Creating Lakehouse '$LakehouseName'"
 $lakehouseBody = @{
     displayName = $LakehouseName
     type        = "Lakehouse"
-    description = "Oil and Gas Refinery data lakehouse for ontology accelerator"
+    description = "Construction Building Site data lakehouse for ontology accelerator"
 }
 
 try {
@@ -525,9 +525,9 @@ $notebookBase64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($note
 Write-Info "Notebook content encoded (Base64 length: $($notebookBase64.Length))"
 
 # ---- Step 3A: Create notebook item (without definition) ----
-$nbDescription = "Loads Oil and Gas Refinery CSV files from lakehouse Files into Delta tables"
+$nbDescription = "Loads Construction Building Site CSV files from lakehouse Files into Delta tables"
 $createNbBodyJson = @{
-    displayName = "OilGasRefinery_LoadTables"
+    displayName = "ConstructionSite_LoadTables"
     type        = "Notebook"
     description = $nbDescription
 } | ConvertTo-Json -Depth 5
@@ -569,7 +569,7 @@ for ($createAttempt = 1; $createAttempt -le 3; $createAttempt++) {
             Start-Sleep -Seconds 3
             $nbItems = (Invoke-RestMethod -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=Notebook" `
                 -Headers @{Authorization = "Bearer $fabricToken"}).value
-            $nbFound = $nbItems | Where-Object { $_.displayName -eq "OilGasRefinery_LoadTables" } | Select-Object -First 1
+            $nbFound = $nbItems | Where-Object { $_.displayName -eq "ConstructionSite_LoadTables" } | Select-Object -First 1
             if ($nbFound) { $notebookId = $nbFound.id }
         }
 
@@ -590,7 +590,7 @@ for ($createAttempt = 1; $createAttempt -le 3; $createAttempt++) {
             Write-Warn "Notebook already exists - looking up..."
             $nbItems = (Invoke-RestMethod -Uri "$FabricApiBase/workspaces/$WorkspaceId/items?type=Notebook" `
                 -Headers @{Authorization = "Bearer $fabricToken"}).value
-            $nbFound = $nbItems | Where-Object { $_.displayName -eq "OilGasRefinery_LoadTables" } | Select-Object -First 1
+            $nbFound = $nbItems | Where-Object { $_.displayName -eq "ConstructionSite_LoadTables" } | Select-Object -First 1
             if ($nbFound) { $notebookId = $nbFound.id; Write-Info "Using existing notebook: $notebookId" }
             break
         }
@@ -708,7 +708,7 @@ if ($notebookId -and $definitionApplied) {
 
     if (-not $notebookSuccess) {
         Write-Warn "Notebook did not complete successfully."
-        Write-Warn "Please run 'OilGasRefinery_LoadTables' manually from the Fabric portal."
+        Write-Warn "Please run 'ConstructionSite_LoadTables' manually from the Fabric portal."
     }
 }
 elseif ($notebookId -and -not $definitionApplied) {
@@ -726,7 +726,7 @@ Write-Step "Step 4: Creating Eventhouse '$EventhouseName' for telemetry data"
 $eventhouseBody = @{
     displayName = $EventhouseName
     type        = "Eventhouse"
-    description = "Eventhouse for Oil & Gas Refinery sensor telemetry streaming data"
+    description = "Eventhouse for Construction Building Site IoT sensor telemetry streaming data"
 }
 
 try {
@@ -834,7 +834,7 @@ if (Test-Path $tmdlRoot) {
     Write-Info "Total TMDL parts: $($smParts.Count)"
 
     # Build JSON manually (PS 5.1 ConvertTo-Json crashes with large payloads)
-    $smDescription = "Direct Lake semantic model for Oil and Gas Refinery ontology - 13 tables, 17 relationships, DAX measures"
+    $smDescription = "Direct Lake semantic model for Construction Building Site ontology - 13 tables, 17 relationships, DAX measures"
     $partsJson = $smParts -join ","
     $createSmJson = '{"displayName":"' + $SemanticModelName + '","type":"SemanticModel","description":"' + $smDescription + '","definition":{"parts":[' + $partsJson + ']}}'
     Write-Info "SM payload size: $($createSmJson.Length) chars"
@@ -935,7 +935,7 @@ Write-Step "Step 6: Creating Ontology '$OntologyName'"
 
 $ontologyBody = @{
     displayName = $OntologyName
-    description = "Oil and Gas Refinery ontology - entity types for refineries, process units, equipment, sensors, products, maintenance, and safety"
+    description = "Construction Building Site ontology - entity types for building sites, work zones, construction assets, IoT sensors, materials, inspections, and safety"
     type        = "Ontology"
 }
 
@@ -1147,7 +1147,7 @@ if ($ontologyId) {
 Write-Host ""
 Write-Host "  REMAINING MANUAL STEPS:" -ForegroundColor Yellow
 Write-Host "  -------------------------------------------------" -ForegroundColor Yellow
-Write-Host "  1. If notebook did not run: Execute 'OilGasRefinery_LoadTables' notebook" -ForegroundColor Yellow
+Write-Host "  1. If notebook did not run: Execute 'ConstructionSite_LoadTables' notebook" -ForegroundColor Yellow
 Write-Host "  2. If KQL tables were not created: Upload SensorTelemetry.csv to Eventhouse manually" -ForegroundColor Yellow
 Write-Host "  3. If semantic model was created manually: define relationships" -ForegroundColor Yellow
 Write-Host "     (see SEMANTIC_MODEL_GUIDE.md)" -ForegroundColor Yellow
@@ -1155,7 +1155,7 @@ Write-Host "  4. Open ontology and configure entity types + relationships" -Fore
 Write-Host "     (see SETUP_GUIDE.md Step 4)" -ForegroundColor Yellow
 Write-Host "  5. RTI Dashboard: Requires 'Create Real-Time dashboards' tenant setting" -ForegroundColor Yellow
 Write-Host "  6. Data Agent: Uses the Ontology as its sole data source (requires F64+)" -ForegroundColor Yellow
-Write-Host "  7. Graph Query Set: Open the GQS, select graph model, copy queries from deploy/RefineryGraphQueries.gql" -ForegroundColor Yellow
+Write-Host "  7. Graph Query Set: Open the GQS, select graph model, copy queries from deploy/ConstructionGraphQueries.gql" -ForegroundColor Yellow
 Write-Host "  8. Operations Agent: Open agent in Fabric, add Knowledge Source (KQL DB), configure Actions, then Start" -ForegroundColor Yellow
 Write-Host ""
 Write-Host "  Fabric Portal: https://app.fabric.microsoft.com/" -ForegroundColor Cyan

@@ -1,0 +1,70 @@
+table dimmaterialstorage
+	lineageTag: 20000007-0001-0001-0001-000000000001
+
+	measure 'Storage Count' = COUNTROWS(dimmaterialstorage)
+		displayFolder: Measures
+		lineageTag: 20000007-0001-0001-0001-100000000001
+
+	measure 'Total Capacity Tonnes' = SUM(dimmaterialstorage[CapacityTonnes])
+		displayFolder: Measures
+		lineageTag: 20000007-0001-0001-0001-100000000002
+
+	measure 'Storage Utilisation %' = DIVIDE(SUM(dimmaterialstorage[CurrentLevelTonnes]), SUM(dimmaterialstorage[CapacityTonnes]), 0)
+		formatString: 0.0%
+		displayFolder: Measures
+		lineageTag: 20000007-0001-0001-0001-100000000003
+
+	column StorageId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: StorageId
+		lineageTag: 20000007-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column StorageName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: StorageName
+		lineageTag: 20000007-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column CapacityTonnes
+		dataType: double
+		summarizeBy: sum
+		sourceColumn: CapacityTonnes
+		lineageTag: 20000007-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column CurrentLevelTonnes
+		dataType: double
+		summarizeBy: sum
+		sourceColumn: CurrentLevelTonnes
+		lineageTag: 20000007-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaterialId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MaterialId
+		lineageTag: 20000007-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column SiteId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SiteId
+		lineageTag: 20000007-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimmaterialstorage = entity
+		mode: directLake
+		entityName: dimmaterialstorage
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

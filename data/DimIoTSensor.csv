@@ -1,0 +1,16 @@
+SensorId,SensorName,SensorType,ZoneId,AssetId,Unit,Status
+SNS-001,Dust Monitor Block A,Dust,ZONE-002,ASSET-001,mg/m3,Active
+SNS-002,Noise Logger North Wing,Noise,ZONE-006,ASSET-006,dB,Active
+SNS-003,Vibration Sensor Crane TC-200,Vibration,ZONE-002,ASSET-001,mm/s,Active
+SNS-004,Temperature Probe Block B,Temperature,ZONE-004,ASSET-007,°C,Active
+SNS-005,Load Cell Crane TC-200,Load,ZONE-002,ASSET-001,kg,Active
+SNS-006,CO2 Monitor Fit-out Zone,CO2,ZONE-008,ASSET-015,ppm,Active
+SNS-007,Humidity Sensor MEP Zone,Humidity,ZONE-003,ASSET-005,%RH,Active
+SNS-008,Dust Sensor Harbour Block,Dust,ZONE-009,ASSET-002,mg/m3,Active
+SNS-009,Noise Logger East Wing,Noise,ZONE-013,ASSET-009,dB,Active
+SNS-010,Vibration Sensor Compactor,Vibration,ZONE-015,ASSET-014,mm/s,Active
+SNS-011,Temperature Probe Finishing,Temperature,ZONE-011,ASSET-010,°C,Active
+SNS-012,Load Cell Potain MDT,Load,ZONE-010,ASSET-008,kg,Active
+SNS-013,CO2 Monitor Electrical Zone,CO2,ZONE-007,ASSET-012,ppm,Active
+SNS-014,Dust Monitor Foundation,Dust,ZONE-001,ASSET-004,mg/m3,Inactive
+SNS-015,Humidity Sensor Envelope,Humidity,ZONE-005,ASSET-003,%RH,Active

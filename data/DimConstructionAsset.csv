@@ -1,0 +1,16 @@
+AssetId,AssetName,AssetType,Manufacturer,Status,ZoneId
+ASSET-001,Tower Crane TC-200,Crane,Liebherr,Active,ZONE-002
+ASSET-002,Cat 320 Excavator,Excavator,Caterpillar,Active,ZONE-009
+ASSET-003,Layher Allround Scaffold Set A,Scaffolding,Layher,Active,ZONE-005
+ASSET-004,Volumetric Concrete Mixer M8,Concrete Mixer,Carmix,Active,ZONE-001
+ASSET-005,Linde H50 Forklift,Forklift,Linde,Active,ZONE-003
+ASSET-006,Atlas Copco QAS 150,Generator,Atlas Copco,Active,ZONE-006
+ASSET-007,Bomag BW 120 Compactor,Compactor,Bomag,Active,ZONE-004
+ASSET-008,Potain MDT 219 Crane,Crane,Potain,Active,ZONE-010
+ASSET-009,Volvo EC220E Excavator,Excavator,Volvo,Maintenance,ZONE-013
+ASSET-010,PERI UP Scaffold Set B,Scaffolding,PERI,Active,ZONE-011
+ASSET-011,Concrete Mixer M12 Pro,Concrete Mixer,Carmix,Active,ZONE-009
+ASSET-012,JCB Teletruk 30-19,Forklift,JCB,Active,ZONE-007
+ASSET-013,Denyo DCA-150 Generator,Generator,Denyo,Active,ZONE-014
+ASSET-014,Wacker Neuson DPU Compactor,Compactor,Wacker Neuson,Active,ZONE-015
+ASSET-015,Liebherr LTM 1100 Crane,Crane,Liebherr,Active,ZONE-008

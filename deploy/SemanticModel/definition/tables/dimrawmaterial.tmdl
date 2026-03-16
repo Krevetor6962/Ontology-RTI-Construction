@@ -1,0 +1,66 @@
+table dimrawmaterial
+	lineageTag: 20000005-0001-0001-0001-000000000001
+
+	measure 'Material Count' = COUNTROWS(dimrawmaterial)
+		displayFolder: Measures
+		lineageTag: 20000005-0001-0001-0001-100000000001
+
+	measure 'Avg Unit Cost GBP' = AVERAGE(dimrawmaterial[UnitCostGBP])
+		formatString: £#,0.00
+		displayFolder: Measures
+		lineageTag: 20000005-0001-0001-0001-100000000002
+
+	column MaterialId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MaterialId
+		lineageTag: 20000005-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaterialName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MaterialName
+		lineageTag: 20000005-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column MaterialType
+		dataType: string
+		summarizeBy: none
+		sourceColumn: MaterialType
+		lineageTag: 20000005-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Supplier
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Supplier
+		lineageTag: 20000005-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column UnitOfMeasure
+		dataType: string
+		summarizeBy: none
+		sourceColumn: UnitOfMeasure
+		lineageTag: 20000005-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column UnitCostGBP
+		dataType: double
+		summarizeBy: none
+		sourceColumn: UnitCostGBP
+		lineageTag: 20000005-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimrawmaterial = entity
+		mode: directLake
+		entityName: dimrawmaterial
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table

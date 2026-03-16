@@ -1,0 +1,69 @@
+table dimworker
+	lineageTag: 20000004-0001-0001-0001-000000000001
+
+	measure 'Worker Count' = COUNTROWS(dimworker)
+		displayFolder: Measures
+		lineageTag: 20000004-0001-0001-0001-100000000001
+
+	column WorkerId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: WorkerId
+		lineageTag: 20000004-0001-0001-0001-200000000001
+
+		annotation SummarizationSetBy = Automatic
+
+	column FirstName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: FirstName
+		lineageTag: 20000004-0001-0001-0001-200000000002
+
+		annotation SummarizationSetBy = Automatic
+
+	column LastName
+		dataType: string
+		summarizeBy: none
+		sourceColumn: LastName
+		lineageTag: 20000004-0001-0001-0001-200000000003
+
+		annotation SummarizationSetBy = Automatic
+
+	column Trade
+		dataType: string
+		summarizeBy: none
+		sourceColumn: Trade
+		lineageTag: 20000004-0001-0001-0001-200000000004
+
+		annotation SummarizationSetBy = Automatic
+
+	column ContractorCompany
+		dataType: string
+		summarizeBy: none
+		sourceColumn: ContractorCompany
+		lineageTag: 20000004-0001-0001-0001-200000000005
+
+		annotation SummarizationSetBy = Automatic
+
+	column CertificationExpiry
+		dataType: string
+		summarizeBy: none
+		sourceColumn: CertificationExpiry
+		lineageTag: 20000004-0001-0001-0001-200000000006
+
+		annotation SummarizationSetBy = Automatic
+
+	column SiteId
+		dataType: string
+		summarizeBy: none
+		sourceColumn: SiteId
+		lineageTag: 20000004-0001-0001-0001-200000000007
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dimworker = entity
+		mode: directLake
+		entityName: dimworker
+		expressionSource: DatabaseQuery
+
+	annotation PBI_ResultType = Table
